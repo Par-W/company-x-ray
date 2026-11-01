@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="公司X光">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1220"/><stop offset="1" stop-color="#334155"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity=".85"/>
+      <stop offset=".18" stop-color="#22d3ee" stop-opacity=".28"/>
+      <stop offset=".82" stop-color="#22d3ee" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity=".85"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="115" fill="url(#bg)"/>
+  <g stroke="#22d3ee" stroke-opacity=".18" stroke-width="2">
+    <line x1="105.0" y1="105" x2="105.0" y2="407"/><line x1="105" y1="105.0" x2="407" y2="105.0"/><line x1="155.3" y1="105" x2="155.3" y2="407"/><line x1="105" y1="155.3" x2="407" y2="155.3"/><line x1="205.6" y1="105" x2="205.6" y2="407"/><line x1="105" y1="205.6" x2="407" y2="205.6"/><line x1="255.9" y1="105" x2="255.9" y2="407"/><line x1="105" y1="255.9" x2="407" y2="255.9"/><line x1="306.2" y1="105" x2="306.2" y2="407"/><line x1="105" y1="306.2" x2="407" y2="306.2"/><line x1="356.5" y1="105" x2="356.5" y2="407"/><line x1="105" y1="356.5" x2="407" y2="356.5"/><line x1="406.8" y1="105" x2="406.8" y2="407"/><line x1="105" y1="406.8" x2="407" y2="406.8"/>
+  </g>
+  <g fill="none" stroke="#22d3ee" stroke-width="18" stroke-linecap="square">
+    <path d="M105 105 h58 M105 105 v58"/>
+    <path d="M407 105 h-58 M407 105 v58"/>
+    <path d="M105 407 h58 M105 407 v-58"/>
+    <path d="M407 407 h-58 M407 407 v-58"/>
+  </g>
+  <rect x="105" y="216" width="302" height="80" fill="url(#beam)"/>
+  <line x1="123" y1="256" x2="389" y2="256" stroke="#fff" stroke-opacity=".85" stroke-width="6"/>
+</svg>

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    tools:context=".ui.onboarding.OnboardingActivity">
+
+    <!-- 顶部进度指示器（6步圆点） -->
+    <LinearLayout
+        android:id="@+id/progressDotsContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="@dimen/spacing_xlarge">
+
+        <View
+            android:id="@+id/dot1"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginEnd="@dimen/spacing_small"
+            android:background="@drawable/bg_dot_active" />
+
+        <View
+            android:id="@+id/dot2"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginEnd="@dimen/spacing_small"
+            android:background="@drawable/bg_dot_inactive" />
+
+        <View
+            android:id="@+id/dot3"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginEnd="@dimen/spacing_small"
+            android:background="@drawable/bg_dot_inactive" />
+
+        <View
+            android:id="@+id/dot4"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginEnd="@dimen/spacing_small"
+            android:background="@drawable/bg_dot_inactive" />
+
+        <View
+            android:id="@+id/dot5"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginEnd="@dimen/spacing_small"
+            android:background="@drawable/bg_dot_inactive" />
+
+        <View
+            android:id="@+id/dot6"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:background="@drawable/bg_dot_inactive" />
+    </LinearLayout>
+
+    <!-- 步数文字 -->
+    <TextView
+        android:id="@+id/tvStepIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/onboarding_step_format"
+        android:textSize="@dimen/text_size_hint"
+        android:textColor="@color/text_hint"
+        app:layout_constraintTop_toBottomOf="@id/progressDotsContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="@dimen/spacing_small" />
+
+    <!-- 中间 ViewPager2 -->
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/tvStepIndicator"
+        app:layout_constraintBottom_toTopOf="@id/btnNext"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="@dimen/spacing_medium"
+        android:layout_marginBottom="@dimen/spacing_medium"
+        android:overScrollMode="never" />
+
+    <!-- 底部"跳过"文字按钮 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSkip"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/onboarding_skip"
+        android:textSize="@dimen/text_size_body"
+        android:textColor="@color/text_hint"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginBottom="@dimen/spacing_xlarge"
+        android:layout_marginStart="@dimen/page_padding_horizontal"
+        android:paddingHorizontal="@dimen/spacing_medium" />
+
+    <!-- 底部"下一步"大按钮 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnNext"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/button_height_large"
+        android:text="@string/next"
+        android:textSize="@dimen/text_size_button"
+        android:textStyle="bold"
+        app:cornerRadius="@dimen/corner_radius_button"
+        app:backgroundTint="@color/button_primary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btnSkip"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="@dimen/spacing_xlarge"
+        android:layout_marginStart="@dimen/spacing_medium"
+        android:layout_marginEnd="@dimen/page_padding_horizontal" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

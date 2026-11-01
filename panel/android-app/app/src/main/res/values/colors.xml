@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 主色调 - 品牌蓝绿色系，专业可信 -->
+    <color name="primary">#2E7D32</color>
+    <color name="primary_dark">#1B5E20</color>
+    <color name="primary_light">#4CAF50</color>
+    <color name="on_primary">#FFFFFF</color>
+
+    <!-- 次要色 -->
+    <color name="secondary">#1565C0</color>
+    <color name="secondary_light">#1976D2</color>
+    <color name="on_secondary">#FFFFFF</color>
+
+    <!-- 风险等级颜色 - 高对比度，长辈易识别 -->
+    <!-- 红色 - 高危 -->
+    <color name="risk_high">#D32F2F</color>
+    <color name="risk_high_light">#FF5252</color>
+    <color name="risk_high_dark">#B71C1C</color>
+    <color name="risk_high_bg">#FFEBEE</color>
+    <color name="on_risk_high">#FFFFFF</color>
+
+    <!-- 黄色/橙色 - 中危 -->
+    <color name="risk_medium">#F57C00</color>
+    <color name="risk_medium_light">#FFB74D</color>
+    <color name="risk_medium_dark">#E65100</color>
+    <color name="risk_medium_bg">#FFF3E0</color>
+    <color name="on_risk_medium">#FFFFFF</color>
+
+    <!-- 绿色 - 安全/低危 -->
+    <color name="risk_low">#388E3C</color>
+    <color name="risk_low_light">#66BB6A</color>
+    <color name="risk_low_dark">#1B5E20</color>
+    <color name="risk_low_bg">#E8F5E9</color>
+    <color name="on_risk_low">#FFFFFF</color>
+
+    <!-- 背景色 - 浅色模式 -->
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F5F5F5</color>
+
+    <!-- 文字颜色 - 高对比度，长辈友好 -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#424242</color>
+    <color name="text_hint">#757575</color>
+    <color name="text_disabled">#BDBDBD</color>
+    <color name="text_on_dark">#FFFFFF</color>
+
+    <!-- 分割线/边框 -->
+    <color name="divider">#E0E0E0</color>
+    <color name="border">#BDBDBD</color>
+
+    <!-- 按钮颜色 -->
+    <color name="button_primary">#2E7D32</color>
+    <color name="button_primary_pressed">#1B5E20</color>
+    <color name="button_secondary">#1565C0</color>
+    <color name="button_danger">#D32F2F</color>
+    <color name="button_warning">#F57C00</color>
+
+    <!-- 图标颜色 -->
+    <color name="icon_primary">#212121</color>
+    <color name="icon_secondary">#757575</color>
+    <color name="icon_on_primary">#FFFFFF</color>
+
+    <!-- 状态栏/导航栏 -->
+    <color name="status_bar">@color/primary_dark</color>
+    <color name="navigation_bar">#FFFFFF</color>
+
+    <!-- 卡片背景 -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_radius_bg">#F5F5F5</color>
+
+    <!-- 深色模式（夜间）备用色 -->
+    <color name="background_dark">#121212</color>
+    <color name="surface_dark">#1E1E1E</color>
+    <color name="text_primary_dark">#FFFFFF</color>
+    <color name="text_secondary_dark">#B0B0B0</color>
+
+</resources>

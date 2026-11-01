@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>家人端 · 风险告警</title><!-- 品牌图标：扫描取景框（scripts/make_icons.py 生成，favicon/客户端 exe/扩展图标同一套）-->
+<link rel="icon" href="../assets/favicon.ico" sizes="48x48">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+/* 语义色统一由 theme.css 提供（3.0.0）：硬红 / 软红 / 黄 / 绿各只认一支 */
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+     color:var(--x-ink);background:var(--x-bg)}
+
+/* 顶栏 */
+.top{background:var(--x-top-bg);color:var(--x-top-ink);padding:17px 20px 19px;
+     border-bottom:1px solid var(--x-top-line)}
+.top h1{margin:0;font-size:18px;letter-spacing:-.2px;font-weight:700}
+.top p{margin:7px 0 0;color:var(--x-top-muted);font-size:12.5px;line-height:1.6}
+.wrap{max-width:720px;margin:0 auto;padding:18px 20px 34px}
+
+/* 状态条 */
+.bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
+.bar small{color:var(--x-dot);font-size:12.5px;display:flex;align-items:center;gap:6px}
+.live{width:7px;height:7px;border-radius:50%;background:var(--x-ok);flex:none;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+.btn{border:0;border-radius:var(--x-r-sm);padding:9px 16px;background:var(--x-brand);color:#fff;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px;transition:transform .12s,filter .12s}
+.btn:active{transform:scale(.97);filter:brightness(.94)}
+.btn:disabled{opacity:.55;cursor:wait}
+
+/* 列表 */
+.list{display:grid;gap:14px}
+.empty,.error{background:var(--x-card);border:1px solid var(--x-line);border-radius:var(--x-r-md);padding:28px;color:var(--x-dot);text-align:center;font-size:14px}
+.error{color:var(--x-bad)}
+
+/* 告警卡：左侧色带 + 等级徽章 + 新到脉冲 */
+.alert{position:relative;background:var(--x-card);border:1px solid var(--x-bad);border-radius:var(--x-r-md);padding:17px 17px 17px 21px;
+       box-shadow:0 4px 16px rgba(15,23,42,.07);overflow:hidden;animation:cardIn .4s cubic-bezier(.16,1,.3,1) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.alert::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--x-bad)}
+.alert.soft{border-color:var(--x-grey)}.alert.soft::before{background:var(--x-grey)}
+.alert.yellow{border-color:var(--x-grey)}.alert.yellow::before{background:var(--x-grey)}
+.alert.fresh{animation:cardIn .4s cubic-bezier(.16,1,.3,1) both,ring 2s ease-out 2}
+@keyframes ring{0%{box-shadow:0 4px 16px rgba(15,23,42,.07),0 0 0 0 rgba(220,38,38,.42)}100%{box-shadow:0 4px 16px rgba(15,23,42,.07),0 0 0 16px rgba(220,38,38,0)}}
+.alert.acknowledged{filter:grayscale(.92);opacity:.6}
+.alert.acknowledged::before{background:var(--x-dot)}
+
+.head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.level{display:inline-flex;align-items:center;gap:5px;border-radius:var(--x-r-xs);padding:4px 11px;font-size:12px;font-weight:800;background:var(--x-sev-bg-bad);color:var(--x-bad)}
+.soft .level{background:var(--x-sev-bg-warn);color:var(--x-grey)}
+.yellow .level{background:var(--x-sev-bg-warn);color:var(--x-grey)}
+.ts{font-size:11.5px;color:var(--x-dot);font-variant-numeric:tabular-nums}
+.merchant{font-size:19.5px;font-weight:800;margin:13px 0 10px;line-height:1.35;word-break:break-word}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;font-size:13px}
+.fact{background:var(--x-kpi-bg);border:1px solid var(--x-line);border-radius:var(--x-r-sm);padding:9px 10px;color:var(--x-dot)}
+.fact b{display:block;color:var(--x-ink);margin-top:3px;font-size:13.5px;word-break:break-word}
+.amount{color:var(--x-bad);font-weight:900!important;font-size:15px!important}
+.advice{margin-top:12px;padding:12px 13px;background:var(--x-sev-bg-warn);border-left:3px solid var(--x-grey);border-radius:0 var(--x-r-sm) var(--x-r-sm) 0;line-height:1.65;font-size:13.5px}
+.evidence{margin-top:11px}
+.evidence summary{cursor:pointer;color:var(--x-brand);font-weight:700;font-size:12.5px;user-select:none}
+.evidence pre{white-space:pre-wrap;font:12px/1.7 ui-monospace,Consolas,monospace;background:var(--x-kpi-bg);border-radius:var(--x-r-sm);padding:11px;margin-top:8px;color:var(--x-muted)}
+.confirm{margin-top:13px;width:100%;border:0;border-radius:var(--x-r-sm);padding:12px 0;background:var(--x-brand);color:#fff;font-weight:800;font-size:14.5px;cursor:pointer;font-family:inherit;transition:transform .12s}
+.confirm:active{transform:scale(.985)}
+.confirm.done{background:var(--x-dot);cursor:default}
+
+/* 自证通道 */
+.verify{background:var(--x-card);border:1px solid var(--x-line);border-radius:var(--x-r-md);padding:19px 18px;margin-top:22px}
+.verify h2{margin:0 0 8px;font-size:16px}
+.verify p{margin:0 0 13px;font-size:12.5px;color:var(--x-muted);line-height:1.7}
+.fields{display:grid;gap:9px}
+.fields input{border:1.5px solid var(--x-line);border-radius:var(--x-r-sm);padding:11px 12px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .16s}
+.fields input:focus{border-color:var(--x-brand)}
+.verify-msg{margin-top:11px;font-size:12.5px;color:var(--x-muted);min-height:18px}
+
+/* 离线演示模式提示 */
+.offline{background:var(--x-sev-bg-warn);border:1px solid var(--x-grey);color:var(--x-grey);border-radius:var(--x-r-sm);padding:11px 13px;font-size:12.5px;margin-bottom:14px;display:none;line-height:1.6}
+.offline.show{display:block}
+</style>
+<script>
+/* 主题同步（3.0.1）：本页与主站共用 theme.css 的令牌。
+   偏好存在 localStorage['xray.theme']，主站设置页改的是同一个键 ——
+   所以在别的页面改完主题，这页刷新就跟着变。
+   默认深色：专业终端的主形态（theme.css 的 :root 就是深色值）。 */
+(function () {
+  try {
+    var v = localStorage.getItem('xray.theme') || 'system';
+    var dark = (v === 'dark') ||
+      (v === 'system' && window.matchMedia &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  } catch (e) { /* localStorage 不可用：按 theme.css 的默认值渲染 */ }
+})();
+</script>
+</head><body>
+<header class="top">
+  <h1>👨‍👩‍👧 家人守护 · 风险告警</h1>
+  <p>收到告警先看事实和核验依据；涉及金额的先别付，一起核实后再决定。</p>
+</header>
+<main class="wrap">
+  <div class="bar">
+    <small id="status"><span class="live"></span>每 2 秒自动检查一次</small>
+    <button class="btn" id="reload">立即刷新</button>
+  </div>
+  <div class="offline" id="offlineTip">⚠️ <b>离线演示模式</b>：未连接到后端，正在显示示例告警。后端恢复后会自动切回真实数据。</div>
+  <section class="list" id="list"><div class="empty">正在加载告警…</div></section>
+
+  <section class="verify">
+    <h2>🏢 企业自证通道</h2>
+    <p>如果企业认为主体信息有误，可提交主体名称和备案号。提交后进入后端白名单，后续核验会按新信息重新判定。</p>
+    <form id="verifyForm">
+      <div class="fields">
+        <input id="entity" required placeholder="收款 / 签约主体">
+        <input id="record" placeholder="备案编号（可选）">
+      </div>
+      <button class="btn" style="margin-top:13px;width:100%;padding:12px 0;font-size:14.5px" type="submit">提交自证</button>
+    </form>
+    <div class="verify-msg" id="verifyMsg"></div>
+  </section>
+</main>
+<script>
+const API="/api/v1",confirmed=new Set(JSON.parse(localStorage.getItem("xray_family_confirmed")||"[]"));
+const FORCE_MOCK=new URLSearchParams(location.search).has("mock");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+const levelText={red_hard:"高风险 · 建议暂停付款",red_soft:"建议家人复核",yellow:"信息不完整 · 请留意",green:"本次核验未发现异常"};
+const levelIcon={red_hard:"⛔",red_soft:"🟠",yellow:"🟡",green:"✅"};
+const levelClass=l=>l==="red_soft"?"soft":l==="yellow"?"yellow":"";
+function money(v){return v==null||v===""?"未提供":`¥${Number(v).toLocaleString("zh-CN",{minimumFractionDigits:2})}`}
+function confirmAlert(id,b){b.closest(".alert").classList.add("acknowledged");confirmed.add(String(id));localStorage.setItem("xray_family_confirmed",JSON.stringify([...confirmed]));b.textContent="家人已知情";b.classList.add("done");b.disabled=true}
+
+// 离线兜底：后端不可用时（断网/file:// /后端未启动）用这条示例告警，保证这一幕演得出来。
+const DEMO_ALERT={alert_id:"demo-offline-1",event_id:"e-demo-offline",brand:"蜜雪冰城",counterpart_entity:"河南雪王冻品优选餐饮管理有限公司",amount:12800,level:"red_hard",advice_phrase:"该主体未完成特许经营备案，且与您签约的公司与广告宣称品牌不一致",ts:""};
+let offlineMode=false, seenIds=new Set();
+
+function renderDemo(){ DEMO_ALERT.ts=DEMO_ALERT.ts||new Date().toLocaleString("zh-CN"); render([DEMO_ALERT]); }
+
+function render(alerts){
+  const list=document.getElementById("list");
+  if(!alerts.length){ list.innerHTML='<div class="empty">暂无告警</div>'; return }
+  list.innerHTML=alerts.slice().reverse().map(a=>{
+    const id=a.alert_id??a.event_id,done=confirmed.has(String(id)),ack=done?"acknowledged":"";
+    const fresh=(!done && !seenIds.has(String(id)) && !offlineMode)?"fresh":"";
+    if(!offlineMode) seenIds.add(String(id));
+    const e=[`品牌：${a.brand||"未提供"}`,`收款主体：${a.counterpart_entity||"未提供"}`,`风险等级：${levelText[a.level]||a.level||"未提供"}`,`金额：${money(a.amount)}`,`建议：${a.advice_phrase||"未提供"}`].join("\n");
+    return `<article class="alert ${levelClass(a.level)} ${ack} ${fresh}">
+      <div class="head"><span class="level">${levelIcon[a.level]||"⚠"} ${esc(levelText[a.level]||a.level||"待核实")}</span><span class="ts">${esc(a.ts||"")}</span></div>
+      <div class="merchant">${esc(a.counterpart_entity||a.brand||"未提供主体")}</div>
+      <div class="facts">
+        <div class="fact">宣称品牌<b>${esc(a.brand||"未提供")}</b></div>
+        <div class="fact">金额<b class="amount">${esc(money(a.amount))}</b></div>
+      </div>
+      <div class="advice">建议：${esc(a.advice_phrase||"请联系家人一起复核")}</div>
+      <details class="evidence"><summary>查看告警详情</summary><pre>${esc(e)}</pre></details>
+      <button class="confirm ${done?"done":""}" ${done?"disabled":""} onclick="confirmAlert('${esc(id)}',this)">${done?"家人已知情":"我核实过了"}</button>
+    </article>`}).join("")
+}
+
+async function load(){
+  if(FORCE_MOCK){ document.getElementById("offlineTip").classList.add("show"); renderDemo(); document.getElementById("status").innerHTML='<span class="live" style="background:var(--x-grey)"></span>离线演示模式（?mock=1 强制示例告警）'; return }
+  try{
+    const r=await fetch(`${API}/group/demo/alerts`,{cache:"no-store"});
+    if(!r.ok)throw Error(`HTTP ${r.status}`);
+    const d=await r.json();
+    offlineMode=false; document.getElementById("offlineTip").classList.remove("show");
+    render(Array.isArray(d)?d:(d.alerts||[]));
+    document.getElementById("status").innerHTML=`<span class="live"></span>最近检查：${new Date().toLocaleTimeString()} · 每 2 秒自动检查`;
+  }catch(e){
+    offlineMode=true; document.getElementById("offlineTip").classList.add("show");
+    renderDemo();
+    document.getElementById("status").innerHTML='<span class="live" style="background:var(--x-grey)"></span>离线演示模式 · 后端未连接，显示示例告警';
+  }
+}
+
+document.getElementById("reload").onclick=load;
+document.getElementById("verifyForm").onsubmit=async e=>{
+  e.preventDefault();
+  const msg=document.getElementById("verifyMsg");
+  msg.textContent="正在提交…";
+  try{
+    const r=await fetch(`${API}/whitelist`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({counterpart_entity:document.getElementById("entity").value.trim(),record_no:document.getElementById("record").value.trim()})});
+    const d=await r.json();
+    if(!r.ok)throw Error(d.detail||`HTTP ${r.status}`);
+    msg.textContent=d.already?"该主体已在白名单中。":"提交成功，后续核验会按新信息重新判定。";
+    e.target.reset();
+  }catch(err){ msg.textContent=`提交失败：${err.message}` }
+};
+load();setInterval(load,2000);
+</script></body></html>

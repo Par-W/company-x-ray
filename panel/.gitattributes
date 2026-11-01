@@ -1,0 +1,7 @@
+# 本目录（front/panel/）的 Git 属性
+#
+# desktop_launcher.bat 刻意写成**纯 ASCII 内容**：
+#   cmd.exe 解析「含中文的 UTF-8 + LF 换行」批处理时会错乱（把后续行当命令执行），
+#   而纯 ASCII 的批处理在 LF 与 CRLF 下都能正常工作。
+# 因此这里按字节保存（-text），不做换行归一化，避免任何人 checkout 后又被改坏。
+*.bat -text

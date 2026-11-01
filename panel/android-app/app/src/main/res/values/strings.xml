@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 应用名称 -->
+    <string name="app_name">公司X光守护</string>
+
+    <!-- 通用 -->
+    <string name="confirm">确认</string>
+    <string name="cancel">取消</string>
+    <string name="back">返回</string>
+    <string name="next">下一步</string>
+    <string name="ok">好的</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+    <string name="loading">加载中…</string>
+    <string name="retry">重试</string>
+    <string name="close">关闭</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="edit">编辑</string>
+    <string name="add">添加</string>
+
+    <!-- 引导页 -->
+    <string name="onboarding_title_welcome">欢迎使用\n公司X光守护</string>
+    <string name="onboarding_desc_welcome">保护您的手机安全\n识别支付风险</string>
+    <string name="onboarding_title_permission">开启守护权限</string>
+    <string name="onboarding_desc_permission">请开启无障碍服务\n让我们帮您监控风险</string>
+    <string name="onboarding_title_family">绑定家人</string>
+    <string name="onboarding_desc_family">遇到风险时\n家人会收到提醒</string>
+    <string name="onboarding_start">开始使用</string>
+    <string name="onboarding_skip">跳过</string>
+    <string name="onboarding_grant_accessibility">去开启无障碍</string>
+    <string name="onboarding_grant_overlay">去开启悬浮窗</string>
+    <string name="onboarding_grant_notification">去开启通知</string>
+    <string name="onboarding_step_format">第 %1$d 步 / 共 %2$d 步</string>
+    <string name="onboarding_permission_done">已开启，下一步</string>
+
+    <!-- 主界面 -->
+    <string name="main_title">安全守护中</string>
+    <string name="main_status_safe">未检测到风险</string>
+    <string name="main_status_warning">有风险，请查看</string>
+    <string name="main_status_danger">有风险，请处理</string>
+    <string name="main_tab_home">首页</string>
+    <string name="main_tab_history">记录</string>
+    <string name="main_tab_family">家人</string>
+    <string name="main_tab_settings">设置</string>
+    <string name="main_today_safe">今日已拦截</string>
+    <string name="main_total_safe">累计守护</string>
+    <string name="main_times">次</string>
+    <string name="main_days">天</string>
+
+    <!-- 风险提醒 -->
+    <string name="alert_title">风险提醒</string>
+    <string name="alert_high_risk">高风险提醒</string>
+    <string name="alert_medium_risk">中等风险</string>
+    <string name="alert_low_risk">低风险关注</string>
+    <string name="alert_safe">未发现异常</string>
+    <string name="alert_phishing">可疑短信/电话提醒</string>
+    <string name="alert_fake_app">可疑应用提醒</string>
+    <string name="alert_risky_url">风险网址</string>
+    <string name="alert_payment_risk">支付风险提醒</string>
+    <string name="alert_description">风险说明</string>
+    <string name="alert_suggestion">建议操作</string>
+    <string name="alert_call_family">呼叫家人</string>
+    <string name="alert_report">举报</string>
+    <string name="alert_ignore">我知道了</string>
+    <string name="alert_block">风险拦截</string>
+    <string name="alert_vibrate_hint">手机已震动提醒</string>
+
+    <!-- 家人绑定 -->
+    <string name="family_title">家人守护</string>
+    <string name="family_bind_title">绑定家人手机</string>
+    <string name="family_bind_desc">绑定后，遇到风险时\n家人会收到通知</string>
+    <string name="family_input_code">请输入家人给您的邀请码</string>
+    <string name="family_bind_button">立即绑定</string>
+    <string name="family_bound_list">已绑定的家人</string>
+    <string name="family_unbind">解除绑定</string>
+    <string name="family_call_now">立即呼叫</string>
+    <string name="family_relationship">与我的关系</string>
+    <string name="family_relation_son">儿子</string>
+    <string name="family_relation_daughter">女儿</string>
+    <string name="family_relation_spouse">配偶</string>
+    <string name="family_relation_other">其他亲属</string>
+
+    <!-- 历史记录 -->
+    <string name="history_title">风险记录</string>
+    <string name="history_empty">暂无风险记录</string>
+    <string name="history_today">今天</string>
+    <string name="history_yesterday">昨天</string>
+    <string name="history_earlier">更早</string>
+    <string name="history_clear">清空记录</string>
+    <string name="history_detail">详情</string>
+    <string name="history_time">发生时间</string>
+    <string name="history_type">风险类型</string>
+    <string name="history_level">风险等级</string>
+    <string name="history_status">处理状态</string>
+    <string name="history_handled">已处理</string>
+    <string name="history_pending">待处理</string>
+
+    <!-- 悬浮窗 -->
+    <string name="floating_alert_title">注意风险！</string>
+    <string name="floating_alert_tap_to_view">点击查看详情</string>
+    <string name="floating_service_subtype">风险提醒悬浮窗</string>
+
+    <!-- 无障碍服务 -->
+    <string name="accessibility_service_label">公司X光守护服务</string>
+    <string name="accessibility_service_desc">在您付款或浏览商家信息时，自动核验商家资质，保护您的资金安全。我们只提取必要的商家名称和金额字段，不上传原始屏幕内容。</string>
+
+    <!-- 设置 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_notification">通知提醒</string>
+    <string name="settings_vibrate">震动提醒</string>
+    <string name="settings_floating">悬浮窗提醒</string>
+    <string name="settings_voice">语音播报</string>
+    <string name="settings_font_size">字体大小</string>
+    <string name="settings_font_large">大字体</string>
+    <string name="settings_font_huge">超大字体</string>
+    <string name="settings_about">关于我们</string>
+    <string name="settings_version">版本号</string>
+    <string name="settings_privacy">隐私政策</string>
+    <string name="settings_agreement">用户协议</string>
+    <string name="settings_help">使用帮助</string>
+    <string name="settings_feedback">意见反馈</string>
+
+    <!-- 通知渠道 -->
+    <string name="notification_channel_risk">风险提醒</string>
+    <string name="notification_channel_risk_desc">高危风险时弹出提醒</string>
+    <string name="notification_channel_service">守护服务</string>
+    <string name="notification_channel_service_desc">守护服务运行状态通知</string>
+
+    <!-- 开机自启 -->
+    <string name="boot_started">X光守护已启动</string>
+
+    <!-- 错误提示 -->
+    <string name="error_network">网络连接失败，请检查网络</string>
+    <string name="error_permission">请先开启必要权限</string>
+    <string name="error_bind_failed">绑定失败，请稍后重试</string>
+    <string name="error_invalid_code">邀请码无效</string>
+
+</resources>

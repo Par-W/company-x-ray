@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>统一查询 · 公司X光</title>
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--x-bg);color:var(--x-ink);
+    font:13px/1.75 "Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif}
+  /* 版心与首页同宽（1560）：从首页跳进来时行宽不跳一下，宽屏也不会两侧空一大片 */
+  .wrap{max-width:1560px;margin:0 auto;padding:20px 28px 40px}
+  h1{font-size:18px;margin:0 0 6px;letter-spacing:-.2px;font-weight:700}
+  .sub{color:var(--x-muted);font-size:13px;margin-bottom:18px}
+  .card{background:var(--x-card);border:1px solid var(--x-line);border-radius:var(--x-r-md);padding:20px 22px;margin-bottom:18px;
+    box-shadow:var(--x-card-shadow)}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  input[type=text]{flex:1 1 320px;min-width:220px;padding:10px 12px;border:1px solid var(--x-line);
+    border-radius:var(--x-r-sm);font-size:14px;outline:none}
+  input[type=text]:focus{border-color:var(--x-brand)}
+  button{padding:10px 18px;border:0;border-radius:var(--x-r-sm);background:var(--x-brand);color:#fff;
+    font-size:14px;font-weight:600;cursor:pointer}
+  button:disabled{opacity:.55;cursor:default}
+  .hint{color:var(--x-muted);font-size:12.5px;margin-top:8px}
+  .verdict{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  .badge{display:inline-block;padding:3px 10px;border-radius:var(--x-r-xs);font-size:12.5px;font-weight:700;
+    white-space:nowrap}
+  .b-ok{background:var(--x-sev-bg-ok);color:var(--x-ok)}
+  .b-bad{background:var(--x-sev-bg-bad);color:var(--x-bad)}
+  .b-warn{background:var(--x-sev-bg-warn);color:var(--x-grey)}
+  .b-grey{background:var(--x-kpi-bg);color:var(--x-muted)}
+  .score{font-size:30px;font-weight:800;line-height:1.2;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+  .vtext{flex:1 1 420px;min-width:280px}
+  .vlabel{font-size:15px;font-weight:700;margin-bottom:4px}
+  .vbanner{border-left:4px solid var(--x-bad);background:var(--x-sev-bg-bad);color:var(--x-bad);
+    padding:10px 12px;border-radius:0 var(--x-r-sm) var(--x-r-sm) 0;margin-top:10px;font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:10px 10px;border-bottom:1px solid var(--x-line);vertical-align:top}
+  th{font-size:12px;color:var(--x-muted);font-weight:700;letter-spacing:.3px}
+  tr.conflict td{background:var(--x-sev-bg-bad)}
+  tr:last-child td{border-bottom:0}
+  .src{font-size:11.5px;color:var(--x-muted);display:block;margin-top:2px}
+  .none{color:var(--x-dot)}
+  .foot{color:var(--x-muted);font-size:12.5px;line-height:1.9}
+  .foot li{margin-bottom:4px}
+  .loading{color:var(--x-muted);font-size:13px}
+  code{background:var(--x-code-bg);padding:1px 6px;border-radius:var(--x-r-xs);font-size:12.5px}
+  @media(max-width:640px){ .hide-sm{display:none} }
+</style>
+
+<script>
+/* 主题同步（3.0.1）：本页与主站共用 theme.css 的令牌。
+   偏好存在 localStorage['xray.theme']，主站设置页改的是同一个键 ——
+   所以在别的页面改完主题，这页刷新就跟着变。
+   默认深色：专业终端的主形态（theme.css 的 :root 就是深色值）。 */
+(function () {
+  try {
+    var v = localStorage.getItem('xray.theme') || 'system';
+    var dark = (v === 'dark') ||
+      (v === 'system' && window.matchMedia &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  } catch (e) { /* localStorage 不可用：按 theme.css 的默认值渲染 */ }
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 统一查询</h1>
+  <div class="sub">一次查询，同时给出「本地事实库」与「云端线索」的结果；两侧不一致时**两个值都列出来**，不替你选。</div>
+
+  <div class="card">
+    <div class="row">
+      <input type="text" id="q" placeholder="输入公司名或品牌名，例如：蜜雪冰城 / 郑州优选果业有限公司" autocomplete="off">
+      <button id="go">查询</button>
+    </div>
+    <div class="hint">本地结论立刻出；云端线索需要检索+抽取，稍后补上（未配置 AI 密钥时会如实说明不可用）。</div>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // trust → 徽章配色（v1 的六种口径全都认）
+  const TRUST = {
+    high: ['b-ok', '高'], medium: ['b-warn', '一般'], low: ['b-bad', '偏低'],
+    ai_medium: ['b-warn', '一般 · AI 线索'], unknown: ['b-grey', '信息不足'],
+  };
+  const STATE = {
+    agree: ['b-ok', '两侧一致'],
+    conflict: ['b-bad', '两侧冲突'],
+    local_only: ['b-grey', '仅本地'],
+    cloud_only: ['b-warn', '仅云端'],
+  };
+
+  // 来源标注要说人话：界面上不该出现 brands.json 这种文件名（与首页同一套口径）
+  const SRC_LABEL = { 'brands.json': '品牌库', 'entities.json': '实体库', 'fund_flows.json': '资金流水' };
+  function srcLabel(s) {
+    const k = String(s || '').trim();
+    if (!k) return '';
+    if (SRC_LABEL[k]) return SRC_LABEL[k];
+    if (/\.json$/i.test(k)) return '本地库';
+    if (/^(ai|web|cloud)/i.test(k)) return '云端检索';
+    return k;
+  }
+
+  function fieldRow(f) {
+    const [cls, text] = STATE[f.state] || ['b-grey', f.state];
+    const L = f.local ? esc(f.local.v) + '<span class="src">' + esc(srcLabel(f.local.src)) + '</span>'
+                      : '<span class="none">—</span>';
+    const C = f.cloud ? esc(f.cloud.v) + '<span class="src">' + esc(srcLabel(f.cloud.src)) + '</span>'
+                      : '<span class="none">—</span>';
+    return '<tr class="' + (f.state === 'conflict' ? 'conflict' : '') + '">'
+      + '<td>' + esc(f.label) + '</td>'
+      + '<td>' + L + '</td>'
+      + '<td class="hide-sm">' + C + '</td>'
+      + '<td><span class="badge ' + cls + '">' + esc(text) + '</span>'
+      // 「仅本地」时备注和徽标说的是同一件事，六行重复就是噪音（首页同样处理）
+      + (f.state === 'local_only' || !f.note ? '' : '<span class="src">' + esc(f.note) + '</span>') + '</td></tr>';
+  }
+
+  function render(d, phase) {
+    const v = d.verdict || {};
+    const [tcls, ttext] = TRUST[v.trust] || ['b-grey', v.trust || '—'];
+    const rows = (d.fields || []).map(fieldRow).join('')
+      || '<tr><td colspan="4" class="none">两侧都没有可比的字段。</td></tr>';
+    const cloud = d.sources.cloud || {};
+    const local = d.sources.local || {};
+    const banner = (d.conflicts && d.conflicts.length)
+      ? '<div class="vbanner"><b>两侧说法不同（' + d.conflicts.length + ' 项）</b>：'
+        + d.conflicts.map((c) => esc(c.label) + '（本地：' + esc(c.local.v) + '；云端：' + esc(c.cloud.v) + '）').join('；')
+        + '。请以官方登记为准。</div>'
+      : '';
+
+    $('out').innerHTML =
+      '<div class="card"><div class="verdict">'
+      + '<div><div class="score">' + esc(v.trust_label || '—') + '</div>'
+      + (String(v.trust_label || '').indexOf(ttext) === 0 ? ''
+         : '<span class="badge ' + tcls + '">' + esc(ttext) + '</span>') + '</div>'
+      + '<div class="vtext"><div class="vlabel">' + esc(d.query.name) + '</div>'
+      + '<div style="color:var(--x-muted);font-size:13px">' + esc(v.trust_hint || '') + '</div>'
+      + banner + '</div></div></div>'
+
+      + '<div class="card">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      + '<b>逐字段对照</b><span class="loading">' + (phase === 'local' ? '正在补充云端线索…' : '') + '</span></div>'
+      + '<table><thead><tr><th style="width:26%">字段</th><th>本地事实库</th>'
+      + '<th class="hide-sm">云端线索</th><th style="width:26%">对照结论</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody></table></div>'
+
+      + '<div class="card foot">'
+      + '<div><b>来源</b></div>'
+      + '<div>本地：' + (local.state === 'hit'
+          ? '命中' + (local.brand ? '品牌「' + esc(local.brand) + '」' : '') + (local.entity ? '主体「' + esc(local.entity) + '」' : '')
+            + '，' + local.fields + ' 个字段'
+          : '未收录（查无记录 ≠ 有问题）') + '</div>'
+      + '<div>云端：' + ({ ok: '已取得线索', not_wired: '未配置 AI 密钥', unknown: '检索/抽取无结果',
+                          error: '通道异常', off: '本次未启用' }[cloud.state] || cloud.state || '—')
+      + '　' + esc(cloud.note || '') + '</div>'
+      + '<div style="margin-top:10px"><b>必须知道的局限</b></div>'
+      + '<ul style="margin:6px 0 0 18px;padding:0">'
+      + (d.limits || []).map((x) => '<li>' + esc(x) + '</li>').join('')
+      + '</ul></div>';
+  }
+
+  async function query(name, withCloud) {
+    const r = await fetch('/api/v2/query', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, cloud: withCloud }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }
+
+  let seq = 0;
+  async function run() {
+    const name = $('q').value.trim();
+    if (!name) return;
+    const my = ++seq;                       // 防止连点导致旧结果盖新结果
+    $('go').disabled = true;
+    $('out').innerHTML = '<div class="card loading">查询中…</div>';
+    try {
+      const local = await query(name, false);            // ① 先把本地结论出来
+      if (my !== seq) return;
+      render(local, 'local');
+      const merged = await query(name, true);            // ② 再补云端，整份替换
+      if (my !== seq) return;
+      render(merged, 'done');
+    } catch (e) {
+      if (my === seq) {
+        $('out').innerHTML = '<div class="card"><b>查询失败</b>：' + esc(e.message)
+          + '<div class="hint">这个页面需要后端：请在项目根目录双击「启动并打开首页.bat」。</div></div>';
+      }
+    } finally {
+      if (my === seq) $('go').disabled = false;
+    }
+  }
+
+  $('go').onclick = run;
+  $('q').addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
+  // 支持从首页结果直接带名字进来：/query/?name=xxx
+  const preset = new URLSearchParams(location.search).get('name');
+  if (preset) { $('q').value = preset; run(); } else { $('q').focus(); }
+})();
+</script>
+</body>
+</html>

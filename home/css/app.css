@@ -1,0 +1,1589 @@
+/* ==========================================================================
+ * app.css · 应用层样式（3.2.0）
+ * --------------------------------------------------------------------------
+ * 骨架：深色顶栏 + 左侧导航 + 右侧工作区（三区控制台）
+ * 组件：终端风格 —— 1px 分隔线、紧凑行高、等宽数字、表格优先
+ *
+ * 3.2.0 的重构依据见 docs/ui-reference.md（34 个主流站点）。
+ * 三件事变了：
+ *   ① 所有 padding/margin 从散装数字（9px 13px / 10px 12px / 7px 11px）
+ *      收敛到 --x-s1…--x-s8 阶梯（Carbon：间距本身表达关系与层级）
+ *   ② 层级从"只有边框"改成四档高度（Atlassian：sunken/default/raised/overlay；
+ *      暗色下越高越亮，因为阴影在暗色里看不见）
+ *   ③ 新增命令面板 / 抽屉 / 通知条 / 空状态行动区 / 粘性表头
+ *      （Linear·Raycast 的面板、Shopify Polaris 的空态、腾讯云的表格规范）
+ *
+ * ⚠ 圆角只认三档令牌（check_layout [F] 段守着）；颜色一律取 theme.css 变量。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、三区骨架
+ * ========================================================================== */
+.x-app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+}
+.x-app-body {
+  display: grid;
+  grid-template-columns: var(--x-nav-w) minmax(0, 1fr);
+  min-height: 0;
+}
+.x-nav {
+  background: var(--x-kpi-bg);
+  border-right: 1px solid var(--x-line);
+  padding: var(--x-s2) 0 var(--x-s6);
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  z-index: var(--x-z-nav);
+}
+.x-main {
+  min-width: 0;
+  width: 100%;
+  max-width: var(--x-w-max);
+  padding: var(--x-s5) var(--x-s6) var(--x-s8);
+  overflow-x: hidden;
+}
+
+/* ==========================================================================
+ * 二、顶栏
+ * --------------------------------------------------------------------------
+ * 三段式：品牌 + 折叠 → 全局查询 → 右侧状态与动作（Stripe / AWS 的做法）
+ * ========================================================================== */
+.x-top {
+  background: var(--x-top-bg);
+  color: var(--x-top-ink);
+  border-bottom: 1px solid var(--x-top-line);
+  position: sticky;
+  top: 0;
+  z-index: var(--x-z-top);
+}
+.x-top-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--x-s3);
+  padding: 0 var(--x-s6);
+  height: var(--x-h-top);
+  max-width: var(--x-w-max);
+}
+.x-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--x-s2);
+  font-weight: var(--x-fw-bold);
+  font-size: 13.5px;
+  letter-spacing: -.1px;
+  white-space: nowrap;
+  color: var(--x-top-ink);
+  text-decoration: none;
+}
+.x-logo img {
+  width: 22px; height: 22px;
+  border-radius: var(--x-r-xs);
+  flex: 0 0 auto;
+}
+.x-logo b { font-weight: var(--x-fw-bold); }
+.x-top-spacer { flex: 1; }
+.x-top-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--x-s3);
+  font-size: var(--x-fs-small);
+  color: var(--x-top-muted);
+}
+.x-top-mono {
+  font-family: var(--x-font-mono);
+  font-size: 11px;
+  letter-spacing: .02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* 查询区：顶栏里唯一的输入区，占弹性宽度 */
+.x-top-search {
+  display: flex;
+  gap: var(--x-s2);
+  align-items: center;
+  flex: 0 1 460px;
+  min-width: 0;
+}
+
+/* ---------- 状态灯 ---------- */
+.x-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--x-dot);
+  display: inline-block;
+  flex: none;
+}
+.x-dot.live { background: var(--x-ok); }
+.x-dot.idle { background: var(--x-grey); }
+.x-dot.dead { background: var(--x-bad); }
+
+/* ==========================================================================
+ * 三、左侧导航
+ * --------------------------------------------------------------------------
+ * Slack / Discord 的做法：分组标题小字距大写、当前项左侧竖条高亮、
+ * 计数徽标靠右。折叠态见第二十节。
+ * ========================================================================== */
+.x-nav-group { padding: 0 0 var(--x-s1); }
+.x-nav-title {
+  font-size: var(--x-fs-micro);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--x-muted);
+  padding: var(--x-s3) var(--x-s4) var(--x-s1);
+  font-weight: var(--x-fw-bold);
+}
+.x-nav a {
+  display: flex;
+  align-items: center;
+  gap: var(--x-s2);
+  padding: 6px var(--x-s4);
+  font-size: var(--x-fs-body);
+  color: var(--x-ink);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background var(--x-dur-fast) var(--x-ease),
+              color var(--x-dur-fast) var(--x-ease);
+}
+.x-nav a:hover { background: var(--x-nav-hover); color: var(--x-brand); }
+.x-nav a.on {
+  background: var(--x-nav-on);
+  border-left-color: var(--x-brand);
+  color: var(--x-brand);
+  font-weight: var(--x-fw-bold);
+}
+.x-nav a .nav-sub { font-size: var(--x-fs-body); }
+/* .off：客户端里没有的入口（浏览器插件相关）。用类隐藏，不写内联 display。 */
+.x-nav a.off, .x-pill.off { display: none; }
+.x-nav a .n {
+  margin-left: auto;
+  font-size: var(--x-fs-micro);
+  color: var(--x-muted);
+  font-family: var(--x-font-mono);
+}
+
+/* ---------- 侧栏图标（内联 SVG 线性图标） ----------
+   ⚠ 这组规则曾经整段丢失过（3.0.1 拆文件时只搬了首页首屏的样式）。
+   丢了会怎样：SVG 没有 width/height 属性 → 浏览器按默认 300×150 渲染；
+   又因为没写 fill:none + stroke:currentColor → 路径默认填黑、描边不跟随文字色。
+   结果就是侧栏一排黑块。尺寸用 em，跟着字号走，折叠态改字号即可缩放。 */
+.x-nav a .ni {
+  width: 1.2em; height: 1.2em;
+  flex: 0 0 auto;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+  opacity: .62;
+  transition: opacity var(--x-dur-fast) var(--x-ease);
+}
+.x-nav a:hover .ni, .x-nav a.on .ni { opacity: 1; }
+
+/* 侧栏徽标：未配置 / 无活动 / 在岗 / 未读。
+   ⚠ 类名只有一套（nav-badge）：HTML、guard.js、changelog.js 必须用同一个 ——
+   以前三处各写各的（badge / nav-badge / tag is-*），CSS 命中一半，
+   徽标丢掉 margin-left:auto 就不会靠右对齐。 */
+.x-nav a .nav-badge {
+  margin-left: auto;
+  flex: none;
+  font-size: 10px;
+  font-weight: var(--x-fw-bold);
+  padding: 1px 6px;
+  border-radius: var(--x-r-xs);
+  border: 1px solid transparent;
+  line-height: 1.5;
+  white-space: nowrap;
+  /* 底色/字色走语义色，与 .x-tag 同一套 —— 品牌蓝当底色配白字只有 2.75，不达标。 */
+  color: var(--x-brand);
+  background: var(--x-sev-bg-info);
+  border-color: color-mix(in srgb, var(--x-brand) 40%, transparent);
+}
+.x-nav a .nav-badge.warn {
+  color: var(--x-grey);
+  background: var(--x-sev-bg-warn);
+  border-color: color-mix(in srgb, var(--x-grey) 40%, transparent);
+}
+.x-nav a .nav-badge.danger {
+  color: var(--x-bad);
+  background: var(--x-sev-bg-bad);
+  border-color: color-mix(in srgb, var(--x-bad) 40%, transparent);
+}
+.x-nav a .nav-badge.ok {
+  color: var(--x-ok);
+  background: var(--x-sev-bg-ok);
+  border-color: color-mix(in srgb, var(--x-ok) 40%, transparent);
+}
+/* 徽标显隐只认 .on（点亮 = 有事要说）。
+   ⚠ 不用内联 display —— 内联优先级压过任何选择器，折叠态就顶不掉它。 */
+.x-nav a .nav-badge:not(.on) { display: none; }
+.x-nav a .nav-badge.on { display: inline-flex; }
+.x-nav-foot {
+  margin-top: auto;
+  padding: var(--x-s3) var(--x-s4) 0;
+  border-top: 1px solid var(--x-line);
+  font-size: var(--x-fs-micro);
+  color: var(--x-muted);
+  line-height: 1.8;
+}
+.x-nav-foot .v { font-family: var(--x-font-mono); color: var(--x-ink); }
+
+/* ==========================================================================
+ * 四、页面头（3.2.0 重构）
+ * --------------------------------------------------------------------------
+ * Polaris 的 Page、Stripe 的三段式、AWS 的面包屑，收敛成一个形态：
+ *   面包屑 → 标题 + 副标题 → 右侧动作
+ * ⚠ 全站只允许 pageHead() 产出这个结构，视图里不许再手写 <h1 style="font-size:24px">。
+ *   （3.1.0 资料库页就是手写的 24px 标题，结果同一产品里两种标题层级。）
+ * ========================================================================== */
+.x-page-head {
+  margin: 0 0 var(--x-s5);
+  padding: 0 0 var(--x-s3);
+  border-bottom: 1px solid var(--x-line);
+}
+.x-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--x-fs-small);
+  color: var(--x-muted);
+  margin-bottom: var(--x-s1);
+  flex-wrap: wrap;
+}
+.x-crumbs a { color: var(--x-muted); text-decoration: none; }
+.x-crumbs a:hover { color: var(--x-brand); text-decoration: underline; }
+.x-crumbs .sep { opacity: .5; }
+.x-crumbs .cur { color: var(--x-ink); }
+.x-page-head-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--x-s3);
+  flex-wrap: wrap;
+}
+.x-page-head h1 {
+  margin: 0;
+  font-size: var(--x-fs-title);
+  font-weight: var(--x-fw-bold);
+  letter-spacing: -.2px;
+  line-height: var(--x-lh-title);
+}
+.x-page-head .sub {
+  font-size: var(--x-fs-small);
+  color: var(--x-muted);
+}
+.x-page-head .right {
+  margin-left: auto;
+  display: flex;
+  gap: var(--x-s2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+ * 五、指标磁贴
+ * --------------------------------------------------------------------------
+ * Datadog / AntD Statistic 的做法：小标签 + 大数字（等宽）+ 说明 + 可选走势。
+ * ⚠ 同一个组件有两套类名：首页（home.js）用 x-metrics/x-metric，
+ *   而结果页与名单页（result.js / lists.js）还在用 x-kpis/x-kpi。
+ *   让两套指向同一组规则 —— 视觉统一，也不用改 JS。
+ * ========================================================================== */
+.x-metrics, .x-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+  gap: 1px;
+  background: var(--x-line);
+  border: 1px solid var(--x-line);
+  border-radius: var(--x-r-md);
+  overflow: hidden;
+  margin-bottom: var(--x-s4);
+}
+.x-metric, .x-kpi {
+  background: var(--x-kpi-bg);
+  padding: var(--x-s2) var(--x-s3);
+  min-width: 0;
+}
+.x-metric .k, .x-kpi .k {
+  font-size: var(--x-fs-micro);
+  color: var(--x-muted);
+  letter-spacing: .04em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: var(--x-lh-micro);
+}
+.x-metric b, .x-kpi .v {
+  display: block;
+  font-size: var(--x-fs-display);
+  font-weight: var(--x-fw-bold);
+  line-height: 1.25;
+  margin-top: 2px;
+  letter-spacing: -.4px;
+}
+.x-metric .s, .x-kpi .s {
+  font-size: var(--x-fs-micro);
+  color: var(--x-muted);
+  margin-top: 1px;
+  line-height: var(--x-lh-micro);
+}
+.x-metric .v-ok, .x-kpi .v.x-ok { color: var(--x-ok); }
+.x-metric .v-bad, .x-kpi .v.x-bad { color: var(--x-bad); }
+.x-metric .v-warn, .x-kpi .v.x-grey { color: var(--x-grey); }
+.x-metric .v-info, .x-kpi .v.x-info { color: var(--x-info); }
+/* 走势小图：贴磁贴底部，不抢数字的位置（TradingView 的做法） */
+.x-metric .x-spark { margin-top: var(--x-s1); opacity: .9; }
+
+/* ==========================================================================
+ * 六、卡片 / 面板
+ * ========================================================================== */
+.x-card {
+  background: var(--x-card);
+  border: 1px solid var(--x-line);
+  border-radius: var(--x-r-md);
+  margin-bottom: var(--x-s3);
+  min-width: 0;
+}
+.x-card > .hd {
+  display: flex;
+  align-items: center;
+  gap: var(--x-s2);
+  padding: var(--x-s2) var(--x-s3);
+  border-bottom: 1px solid var(--x-line);
+  min-height: 38px;
+}
+.x-card > .hd h2 {
+  margin: 0;
+  font-size: var(--x-fs-section);
+  font-weight: var(--x-fw-bold);
+  letter-spacing: -.1px;
+  line-height: var(--x-lh-title);
+}
+.x-card > .hd .right { margin-left: auto; display: flex; gap: var(--x-s2); align-items: center; }
+.x-card > .bd { padding: var(--x-s3); }
+/* 贴边内容（表格/列表）：去掉 bd 的内边距，靠卡片边框兜住 */
+.x-card > .bd.is-flush { padding: 0; }
+/* 卡片脚注：给"这段数字是怎么来的"一句话说明 */
+.x-card > .ft {
+  padding: var(--x-s2) var(--x-s3);
+  border-top: 1px solid var(--x-line);
+  font-size: var(--x-fs-small);
+  color: var(--x-muted);
+  line-height: var(--x-lh-small);
+}
+.x-bar {
+  width: 3px; height: 13px;
+  background: var(--x-brand);
+  border-radius: 1px;
+  flex: none;
+}
+
+/* ==========================================================================
+ * 七、表格：终端的主要承载形式
+ * --------------------------------------------------------------------------
+ * 腾讯云 B 端规范 + GitHub 的紧凑列表：
+ *   · 表头与内容必须视觉可分（表头有底色 + 下边框）
+ *   · 长表滚动时表头固定（粘性）
+ *   · 行悬浮给反馈，操作按钮在悬浮时显形（避免满屏按钮）
+ *   · 数字列右对齐 + 等宽
+ * ========================================================================== */
+.x-table-wrap {
+  border: 1px solid var(--x-line);
+  border-radius: var(--x-r-md);
+  overflow: auto;
+  max-height: 68vh;
+  background: var(--x-card);
+}
+.x-table-wrap > .x-table { border: 0; }
+.x-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--x-fs-body);
+}
+.x-table th {
+  text-align: left;
+  font-size: var(--x-fs-micro);
+  font-weight: var(--x-fw-bold);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--x-muted);
+  padding: var(--x-s2) 10px;
+  border-bottom: 1px solid var(--x-line);
+  background: var(--x-kpi-bg);
+  white-space: nowrap;
+  /* 粘性表头：长表滚到第 20 行还知道这列是什么（腾讯云规范） */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.x-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--x-line-soft);
+  vertical-align: top;
+}
+.x-table tbody tr:last-child td { border-bottom: 0; }
+.x-table tbody tr { transition: background var(--x-dur-fast) var(--x-ease); }
+.x-table tbody tr:hover td { background: var(--x-kpi-bg); }
+.x-table tbody tr.is-sel td { background: var(--x-sel-bg); }
+.x-table tr.conflict td { background: var(--x-sev-bg-bad); }
+.x-table th.num, .x-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.x-table .src {
+  display: block;
+  font-size: var(--x-fs-micro);
+  color: var(--x-muted);
+  margin-top: 1px;
+}
+/* 行内操作：默认半透明，悬浮该行才实显（GitHub） */
+.x-table .row-act {
+  display: inline-flex;
+  gap: 6px;
+  opacity: .55;
+  transition: opacity var(--x-dur-fast) var(--x-ease);
+}
+.x-table tr:hover .row-act, .x-table .row-act:focus-within { opacity: 1; }
+
+/* ==========================================================================
+ * 八、表单控件
+ * --------------------------------------------------------------------------
+ * ⚠ .x-select 本身是 <select> 元素（顶栏的口径切换、结果页的下拉），
+ *   不是"包着 select 的容器"。所以这里必须同时命中两种写法：
+ *   `.x-select`（元素本身）与 `.x-select select`（老视图里包着的写法）。
+ * ========================================================================== */
+.x-input, .x-select, .x-select select {
+  height: var(--x-h-ctl);
+  border-radius: var(--x-r-sm);
+  background: var(--x-input-bg);
+  border: 1px solid var(--x-line);
+  color: var(--x-ink);
+  font-size: var(--x-fs-body);
+  padding: 0 10px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  transition: border-color var(--x-dur-fast) var(--x-ease),
+              background var(--x-dur-fast) var(--x-ease);
+}
+.x-input::placeholder { color: var(--x-dot); }
+.x-input:focus, .x-select:focus, .x-select select:focus {
+  border-color: var(--x-brand);
+  background: var(--x-input-bg-focus);
+}
+/* select 元素的原生下拉箭头在深底上很淡，补一个与主题一致的 */
+.x-select {
+  appearance: none;
+  padding-right: 24px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 14px) 14px, calc(100% - 10px) 14px;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.x-btn {
+  height: var(--x-h-ctl);
+  padding: 0 var(--x-s3);
+  border-radius: var(--x-r-sm);
+  border: 1px solid var(--x-line);
+  background: var(--x-kpi-bg);
+  color: var(--x-ink);
+  font-size: var(--x-fs-body);
+  font-weight: var(--x-fw-medium);
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background var(--x-dur-fast) var(--x-ease),
+              border-color var(--x-dur-fast) var(--x-ease),
+              color var(--x-dur-fast) var(--x-ease);
+}
+.x-btn:hover { background: var(--x-nav-hover); border-color: var(--x-soft-border); }
+.x-btn.primary {
+  background: var(--x-brand-solid);
+  border-color: var(--x-brand-solid);
+  color: #fff;
+}
+.x-btn.primary:hover { background: var(--x-brand-active); border-color: var(--x-brand-active); }
+.x-btn.ghost { background: transparent; }
+.x-btn.ghost:hover { background: var(--x-nav-hover); }
+.x-btn.sm { height: var(--x-h-ctl-sm); padding: 0 9px; font-size: var(--x-fs-small); }
+.x-btn:disabled { opacity: .5; cursor: default; }
+.x-btn.danger { color: var(--x-bad); border-color: var(--x-bad); background: transparent; }
+.x-btn.danger:hover { background: var(--x-sev-bg-bad); }
+/* 纯文字按钮：用于卡片头部的次要动作 */
+.x-btn.is-text {
+  background: transparent;
+  border-color: transparent;
+  color: var(--x-muted);
+  padding: 0 var(--x-s2);
+}
+.x-btn.is-text:hover { color: var(--x-brand); background: var(--x-nav-hover); }
+
+/* 顶栏里的输入与按钮（深底） */
+.x-top .x-input {
+  background: var(--x-top-input-bg);
+  border-color: var(--x-top-line);
+  color: var(--x-top-ink);
+}
+.x-top .x-input::placeholder { color: var(--x-top-muted); }
+.x-top .x-input:focus { background: var(--x-top-input-bg-focus); border-color: var(--x-brand); }
+.x-top .x-select {
+  background-color: var(--x-top-input-bg);
+  border-color: var(--x-top-line);
+  color: var(--x-top-ink);
+}
+.x-top .x-select:focus { background-color: var(--x-top-input-bg-focus); border-color: var(--x-brand); }
+/* 顶栏图标按钮：固定宽度 —— 折叠开关的图标在 ☰ / « / » 之间变，
+   宽度不定的话按钮会跟着跳，整条顶栏都在抖。 */
+.x-top .x-top-btn {
+  width: var(--x-h-ctl);
+  padding: 0;
+  justify-content: center;
+  flex: none;
+}
+.x-top .x-btn {
+  background: transparent;
+  border-color: var(--x-top-line);
+  color: var(--x-top-ink);
+}
+.x-top .x-btn:hover { background: rgba(255,255,255,.08); }
+.x-top .x-btn.primary { background: var(--x-brand-solid); border-color: var(--x-brand-solid); color: #fff; }
+
+/* 键帽（命令面板与快捷键提示） */
+.x-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-family: var(--x-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--x-muted);
+  background: var(--x-chip-bg);
+  border: 1px solid var(--x-line);
+  border-bottom-width: 2px;
+  border-radius: var(--x-r-xs);
+}
+
+/* ==========================================================================
+ * 九、标签 / 徽标
+ * ========================================================================== */
+.x-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--x-fs-micro);
+  font-weight: var(--x-fw-bold);
+  padding: 1px 6px;
+  border-radius: var(--x-r-xs);
+  border: 1px solid var(--x-line);
+  background: var(--x-chip-bg);
+  color: var(--x-muted);
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.x-tag.ok { color: var(--x-ok); border-color: color-mix(in srgb, var(--x-ok) 40%, transparent); background: var(--x-sev-bg-ok); }
+.x-tag.bad { color: var(--x-bad); border-color: color-mix(in srgb, var(--x-bad) 40%, transparent); background: var(--x-sev-bg-bad); }
+.x-tag.warn { color: var(--x-grey); border-color: color-mix(in srgb, var(--x-grey) 40%, transparent); background: var(--x-sev-bg-warn); }
+.x-tag.info { color: var(--x-info); border-color: color-mix(in srgb, var(--x-info) 40%, transparent); background: var(--x-sev-bg-info); }
+.x-tag.mono { font-family: var(--x-font-mono); font-weight: var(--x-fw-normal); }
+
+/* 小标签（交易所披露分类 / 更新日志标签）：比 .x-tag 更轻，用来挂数量 */
+.x-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: var(--x-fs-small);
+  padding: 2px var(--x-s2);
+  border-radius: var(--x-r-xs);
+  border: 1px solid var(--x-line);
+  background: var(--x-chip-bg);
+  color: var(--x-muted);
+  white-space: nowrap;
+}
+.x-chip b { font-weight: var(--x-fw-bold); color: var(--x-ink); }
+.x-chips { display: flex; gap: 7px; flex-wrap: wrap; margin: 0 0 10px; }
+
+/* 结果页顶部的一行口径说明 */
+.x-meta { font-size: var(--x-fs-small); color: var(--x-muted); margin: 0 0 9px; }
+.x-meta b { color: var(--x-ink); font-weight: var(--x-fw-bold); }
+
+/* ---------- 页签（下划线式） ----------
+   Ant Design 的做法：页签是"同一份数据的不同切面"，不是导航，
+   所以用下划线而不是按钮组 —— 按钮组会让人以为点了会跳走。
+   计数用小徽标挂右侧，不用括号（括号在中文里容易和数据混）。 */
+.x-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--x-line);
+  margin-bottom: var(--x-s3);
+  overflow-x: auto;
+}
+.x-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--x-s2) var(--x-s3);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--x-muted);
+  font-size: var(--x-fs-body);
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--x-dur-fast) var(--x-ease),
+              border-color var(--x-dur-fast) var(--x-ease);
+}
+.x-tab:hover { color: var(--x-ink); }
+.x-tab.on {
+  color: var(--x-brand);
+  border-bottom-color: var(--x-brand);
+  font-weight: var(--x-fw-bold);
+}
+.x-tab .ct {
+  font-size: var(--x-fs-micro);
+  font-weight: var(--x-fw-normal);
+  color: var(--x-muted);
+  background: var(--x-chip-bg);
+  border-radius: var(--x-r-xs);
+  padding: 0 5px;
+  min-width: 16px;
+  text-align: center;
+}
+.x-tab.on .ct { color: var(--x-brand); background: var(--x-sev-bg-info); }
+
+/* ==========================================================================
+ * 十、提示条 / 通知条
+ * --------------------------------------------------------------------------
+ * Atlassian 的 Flag / Polaris 的 Banner：左侧 3px 色条 + 语义底色 +
+ * 一行标题 + 可选说明与动作。比纯色背景块更容易扫读。
+ * ========================================================================== */
+.x-note {
+  border-left: 3px solid var(--x-brand);
+  background: var(--x-note-bg);
+  padding: var(--x-s2) var(--x-s3);
+  font-size: var(--x-fs-body);
+  line-height: var(--x-lh-body);
+  border-radius: 0 var(--x-r-sm) var(--x-r-sm) 0;
+  margin-bottom: var(--x-s3);
+}
+.x-note.bad { border-left-color: var(--x-bad); background: var(--x-sev-bg-bad); }
+.x-note.warn { border-left-color: var(--x-grey); background: var(--x-sev-bg-warn); }
+.x-note.ok { border-left-color: var(--x-ok); background: var(--x-sev-bg-ok); }
+.x-note b { font-weight: var(--x-fw-bold); }
+
+/* 通知条：带标题 + 描述的完整形态（比 .x-note 重一档） */
+.x-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--x-s3);
+  padding: var(--x-s3);
+  border: 1px solid var(--x-line);
+  border-left-width: 3px;
+  border-left-color: var(--x-brand);
+  border-radius: var(--x-r-sm);
+  background: var(--x-note-bg);
+  margin-bottom: var(--x-s3);
+}
+.x-banner.bad { border-left-color: var(--x-bad); background: var(--x-sev-bg-bad); }
+.x-banner.warn { border-left-color: var(--x-grey); background: var(--x-sev-bg-warn); }
+.x-banner.ok { border-left-color: var(--x-ok); background: var(--x-sev-bg-ok); }
+.x-banner .b-ic {
+  flex: none;
+  width: 16px; height: 16px;
+  margin-top: 2px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  color: var(--x-brand);
+}
+.x-banner.bad .b-ic { color: var(--x-bad); }
+.x-banner.warn .b-ic { color: var(--x-grey); }
+.x-banner.ok .b-ic { color: var(--x-ok); }
+.x-banner .b-main { flex: 1; min-width: 0; }
+.x-banner .b-title {
+  font-weight: var(--x-fw-bold);
+  font-size: var(--x-fs-body);
+  line-height: var(--x-lh-title);
+}
+.x-banner .b-body {
+  font-size: var(--x-fs-small);
+  color: var(--x-muted);
+  line-height: var(--x-lh-small);
+  margin-top: 2px;
+}
+.x-banner .b-acts { flex: none; display: flex; gap: var(--x-s2); align-items: center; }
+
+/* ==========================================================================
+ * 十一、空状态
+ * --------------------------------------------------------------------------
+ * AWS「创建第一个」+ Polaris 教程式空态：必须有**下一步**，
+ * 只说"没有数据"等于把用户晾在原地。
+ * ========================================================================== */
+.x-empty {
+  text-align: center;
+  color: var(--x-muted);
+  font-size: var(--x-fs-body);
+  padding: var(--x-s7) var(--x-s4);
+  line-height: var(--x-lh-body);
+}
+.x-empty .e-ico {
+  width: 32px; height: 32px;
+  margin: 0 auto var(--x-s3);
+  display: block;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.4;
+  opacity: .45;
+}
+.x-empty .e-title {
+  font-size: var(--x-fs-section);
+  font-weight: var(--x-fw-bold);
+  color: var(--x-ink);
+  line-height: var(--x-lh-title);
+  margin-bottom: var(--x-s1);
+}
+.x-empty .e-desc {
+  font-size: var(--x-fs-small);
+  color: var(--x-muted);
+  max-width: 46ch;
+  margin: 0 auto;
+  line-height: var(--x-lh-small);
+}
+.x-empty-act {
+  display: flex;
+  gap: var(--x-s2);
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: var(--x-s4);
+}
+/* 紧凑空态：用在卡片内部、空间小的地方 */
+.x-empty.is-compact { padding: var(--x-s4) var(--x-s3); }
+.x-empty.is-compact .e-ico { width: 24px; height: 24px; margin-bottom: var(--x-s2); }
+
+/* ==========================================================================
+ * 十二、命令面板（⌘K）
+ * --------------------------------------------------------------------------
+ * Linear / Raycast / Vercel 的形态：
+ *   遮罩 → 居中的输入框 + 结果列表（按类别分组）+ 底部快捷键提示
+ *   · 输入框保持真实焦点，方向键移动的是"虚拟高亮"（WAI-ARIA combobox）
+ *   · Esc 关闭；点遮罩关闭；无结果必须有空态
+ * ⚠ 显隐只靠 .on 类，不写内联 display。
+ * ========================================================================== */
+.x-cmdk {
+  position: fixed;
+  inset: 0;
+  z-index: var(--x-z-cmdk);
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh var(--x-s4) var(--x-s4);
+  background: var(--x-scrim);
+}
+.x-cmdk.on { display: flex; }
+.x-cmdk-box {
+  width: min(600px, 100%);
+  max-height: 72vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--x-surface-overlay);
+  border: 1px solid var(--x-line-strong);
+  border-radius: var(--x-r-md);
+  box-shadow: var(--x-shadow-overlay);
+  overflow: hidden;
+}
+.x-cmdk-in {
+  display: flex;
+  align-items: center;
+  gap: var(--x-s2);
+  padding: var(--x-s3) var(--x-s4);
+  border-bottom: 1px solid var(--x-line);
+  flex: none;
+}
+.x-cmdk-in .ic {
+  width: 15px; height: 15px;
+  flex: none;
+  stroke: currentColor; fill: none; stroke-width: 1.8;
+  color: var(--x-muted);
+}
+.x-cmdk-in input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--x-ink);
+  font-size: var(--x-fs-section);
+  font-family: inherit;
+  height: 24px;
+}
+.x-cmdk-in input::placeholder { color: var(--x-dot); }
+.x-cmdk-list {
+  overflow-y: auto;
+  padding: var(--x-s1) 0;
+  flex: 1;
+  min-height: 0;
+}
+.x-cmdk-grp {
+  font-size: var(--x-fs-micro);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--x-muted);
+  padding: var(--x-s2) var(--x-s4) var(--x-s1);
+  font-weight: var(--x-fw-bold);
+}
+.x-cmdk-item {
+  display: flex;
+  align-items: center;
+  gap: var(--x-s2);
+  width: 100%;
+  padding: 7px var(--x-s4);
+  background: transparent;
+  border: 0;
+  color: var(--x-ink);
+  font-size: var(--x-fs-body);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  scroll-margin: var(--x-s2);
+}
+.x-cmdk-item .ci {
+  width: 14px; height: 14px;
+  flex: none;
+  stroke: currentColor; fill: none; stroke-width: 1.7;
+  opacity: .6;
+}
+.x-cmdk-item .ct { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.x-cmdk-item .cd { font-size: var(--x-fs-small); color: var(--x-muted); flex: none; }
+/* 虚拟高亮：由 JS 移动这个类，输入框焦点始终不丢 */
+.x-cmdk-item.sel { background: var(--x-sel-bg); color: var(--x-brand); }
+.x-cmdk-item.sel .ci { opacity: 1; }
+.x-cmdk-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--x-s3);
+  padding: var(--x-s2) var(--x-s4);
+  border-top: 1px solid var(--x-line);
+  font-size: var(--x-fs-micro);
+  color: var(--x-muted);
+  flex: none;
+}
+.x-cmdk-foot .sp { margin-left: auto; }
+.x-cmdk-empty {
+  padding: var(--x-s6) var(--x-s4);
+  text-align: center;
+  color: var(--x-muted);
+  font-size: var(--x-fs-body);
+}
+
+/* ==========================================================================
+ * 十三、右侧检视抽屉
+ * --------------------------------------------------------------------------
+ * Figma 的 inspector：细节放抽屉，不打断主画布。
+ * 用 overlay 高度档 + 阴影，浅色深色都能"浮起来"。
+ * ⚠ 显隐只靠 .on 类。
+ * ========================================================================== */
+.x-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--x-z-drawer);
+  display: none;
+}
+.x-drawer.on { display: block; }
+.x-drawer-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--x-scrim);
+}
+.x-drawer-box {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: min(var(--x-drawer-w), 92vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--x-surface-overlay);
+  border-left: 1px solid var(--x-line-strong);
+  box-shadow: var(--x-shadow-overlay);
+}
+.x-drawer-hd {
+  display: flex;
+  align-items: center;
+  gap: var(--x-s2);
+  padding: var(--x-s3) var(--x-s4);
+  border-bottom: 1px solid var(--x-line);
+  flex: none;
+}
+.x-drawer-hd h2 {
+  margin: 0;
+  font-size: var(--x-fs-section);
+  font-weight: var(--x-fw-bold);
+}
+.x-drawer-hd .right { margin-left: auto; display: flex; gap: var(--x-s2); }
+.x-drawer-bd {
+  padding: var(--x-s4);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  font-size: var(--x-fs-body);
+  line-height: var(--x-lh-body);
+}
+.x-drawer-ft {
+  padding: var(--x-s3) var(--x-s4);
+  border-top: 1px solid var(--x-line);
+  display: flex;
+  gap: var(--x-s2);
+  justify-content: flex-end;
+  flex: none;
+}
+
+/* ==========================================================================
+ * 十四、Toast（瞬时反馈）
+ * --------------------------------------------------------------------------
+ * Slack / Linear：右下角、可叠、几秒自动消失。
+ * ⚠ 与 .x-note 的分工：note 是页面内容的一部分（留在原地），
+ *   toast 是"刚才那下操作成功了没有"（跟着时间走）。
+ * ========================================================================== */
+.x-toasts {
+  position: fixed;
+  right: var(--x-s5);
+  bottom: var(--x-s5);
+  z-index: var(--x-z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--x-s2);
+  align-items: flex-end;
+  pointer-events: none;
+}
+.x-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--x-s2);
+  max-width: 380px;
+  padding: var(--x-s2) var(--x-s3);
+  background: var(--x-surface-overlay);
+  border: 1px solid var(--x-line-strong);
+  border-left-width: 3px;
+  border-left-color: var(--x-brand);
+  border-radius: var(--x-r-sm);
+  box-shadow: var(--x-shadow-overlay);
+  font-size: var(--x-fs-body);
+  color: var(--x-ink);
+  pointer-events: auto;
+  animation: x-in var(--x-dur-base) var(--x-ease);
+}
+.x-toast.bad { border-left-color: var(--x-bad); }
+.x-toast.warn { border-left-color: var(--x-grey); }
+.x-toast.ok { border-left-color: var(--x-ok); }
+@keyframes x-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ==========================================================================
+ * 十五、通用文字与工具类
+ * ========================================================================== */
+.x-muted { color: var(--x-muted); }
+.x-ok { color: var(--x-ok); }
+.x-bad { color: var(--x-bad); }
+.x-warn { color: var(--x-grey); }
+/* x-grey：语义色「待定 / 一般 / 信息不足」用的那支琥珀。
+   ⚠ 它和 .x-warn 是同一个色值，但语义不同：.x-warn 用于「警告语气」，
+   .x-grey 用于「结论等级」—— result.js 的 TRUST_MAP 靠它区分
+   「一般」和「偏低」，丢了就会变成普通墨色，结论看着像已核实。 */
+.x-grey { color: var(--x-grey); }
+.x-info { color: var(--x-info); }
+.x-mono { font-family: var(--x-font-mono); }
+.x-num { font-variant-numeric: tabular-nums; }
+.x-quiet { color: var(--x-muted); text-decoration: none; font-size: var(--x-fs-small); }
+.x-quiet:hover { color: var(--x-brand); }
+.x-read { max-width: var(--x-w-read); }
+
+/* 刷新按钮的旋转反馈：点下去转半圈，给个"正在重载"的信号 */
+.spin { animation: xspin .7s linear infinite; }
+@keyframes xspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}
+
+.x-fatal {
+  border: 1px solid var(--x-bad);
+  background: var(--x-sev-bg-bad);
+  color: var(--x-bad);
+  padding: var(--x-s3);
+  border-radius: var(--x-r-md);
+  font-size: var(--x-fs-body);
+}
+
+/* ---------- 两栏 ---------- */
+.x-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--x-s3);
+  align-items: start;
+}
+@media (max-width: 1120px) { .x-cols { grid-template-columns: minmax(0, 1fr); } }
+/* 结果出来时右栏收起（结果表格要整幅宽）——只用类，不写内联 display */
+.x-cols.is-wide { grid-template-columns: minmax(0, 1fr); }
+
+/* ---------- 列表项 ---------- */
+.x-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--x-s2) var(--x-s3);
+  border-bottom: 1px solid var(--x-line-soft);
+  cursor: pointer;
+  background: transparent;
+  border-left: 0; border-right: 0; border-top: 0;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--x-fs-body);
+  transition: background var(--x-dur-fast) var(--x-ease);
+}
+.x-list-item:hover { background: var(--x-kpi-bg); }
+.x-list-item:last-child { border-bottom: 0; }
+
+/* ---------- 详情展开 ---------- */
+.x-detail summary {
+  cursor: pointer;
+  font-weight: var(--x-fw-bold);
+  font-size: var(--x-fs-body);
+  padding: 7px 0;
+  list-style: none;
+}
+.x-detail summary::-webkit-details-marker { display: none; }
+.x-detail summary::before { content: '▸ '; color: var(--x-muted); }
+.x-detail[open] summary::before { content: '▾ '; }
+
+/* ==========================================================================
+ * 十六、版本时间线与提交流水（更新日志页）
+ * --------------------------------------------------------------------------
+ * 3.0.1 拆文件时这批规则整段丢失 —— 更新日志页当时是「裸奔」的：
+ * 时间线没有竖线、版本号没有层次、提交流水是一堆糊在一起的字。
+ * ========================================================================== */
+.x-tl { position: relative; padding-left: 22px; }
+.x-tl:before {
+  content: '';
+  position: absolute;
+  left: 5px; top: 8px; bottom: 8px;
+  width: 1px;
+  background: var(--x-line);
+}
+.x-tl-item { position: relative; padding: 0 0 var(--x-s5); }
+.x-tl-item:last-child { padding-bottom: 0; }
+.x-tl-item:before {
+  content: '';
+  position: absolute;
+  left: -21px; top: 5px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--x-card);
+  border: 2px solid var(--x-brand);
+}
+.x-tl-head { display: flex; align-items: baseline; gap: var(--x-s2); flex-wrap: wrap; margin-bottom: 6px; }
+.x-tl-v { font-weight: var(--x-fw-bold); font-size: 14px; letter-spacing: -.2px; }
+.x-tl-d { font-size: var(--x-fs-small); color: var(--x-muted); }
+.x-tl-ul { margin: 0; padding-left: 17px; line-height: 1.85; }
+.x-tl-ul li { font-size: var(--x-fs-body); margin-bottom: 5px; }
+
+/* 条目类型徽标（新增 / 修复 / 优化） */
+.x-kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  font-size: 10px;
+  font-weight: var(--x-fw-bold);
+  padding: 1px 5px;
+  border-radius: var(--x-r-xs);
+  border: 1px solid transparent;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+.x-kind.new { color: var(--x-info); background: var(--x-sev-bg-info); border-color: color-mix(in srgb, var(--x-info) 35%, transparent); }
+.x-kind.fix { color: var(--x-grey); background: var(--x-sev-bg-warn); border-color: color-mix(in srgb, var(--x-grey) 35%, transparent); }
+.x-kind.opt { color: var(--x-brand); background: var(--x-sev-bg-info); border-color: color-mix(in srgb, var(--x-brand) 35%, transparent); }
+
+/* 提交流水：等宽字体对齐哈希，日期与说明分列 */
+.x-log {
+  border: 1px solid var(--x-line);
+  border-radius: var(--x-r-md);
+  overflow: hidden;
+  font-size: 12px;
+}
+.x-log-row {
+  display: flex;
+  gap: 10px;
+  padding: 5px 11px;
+  border-bottom: 1px solid var(--x-line-soft);
+  align-items: baseline;
+}
+.x-log-row:last-child { border-bottom: 0; }
+.x-log-row:nth-child(odd) { background: var(--x-kpi-bg); }
+.x-log-t { flex: 0 0 92px; color: var(--x-muted); font-variant-numeric: tabular-nums; }
+.x-log-h {
+  flex: 0 0 58px;
+  color: var(--x-muted);
+  font-family: var(--x-font-mono);
+  font-size: 11px;
+}
+.x-log-m { flex: 1; min-width: 0; }
+
+/* ==========================================================================
+ * 十七、列表项 / 资料库磁贴 / AI 区块 / 骨架屏
+ * --------------------------------------------------------------------------
+ * 同上：3.0.1 丢的规则。这几个类在追踪页、告警页、资料库页都在用。
+ * ========================================================================== */
+.x-item {
+  display: flex;
+  align-items: center;
+  gap: var(--x-s3);
+  padding: var(--x-s2) var(--x-s3);
+  border: 1px solid var(--x-line);
+  border-radius: var(--x-r-md);
+  margin-bottom: var(--x-s2);
+  background: var(--x-card);
+  transition: border-color var(--x-dur-fast) var(--x-ease);
+}
+.x-item:hover { border-color: var(--x-soft-border); }
+.x-item .grow { flex: 1; min-width: 0; }
+
+/* 资料库磁贴：整块可点 */
+.x-tile {
+  display: block;
+  border: 1px solid var(--x-line);
+  border-radius: var(--x-r-md);
+  padding: var(--x-s3);
+  background: var(--x-card);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--x-dur-fast) var(--x-ease),
+              background var(--x-dur-fast) var(--x-ease);
+}
+.x-tile:hover { border-color: var(--x-soft-border); background: var(--x-kpi-bg); }
+.x-tile .t { font-weight: var(--x-fw-bold); font-size: 13px; margin-bottom: var(--x-s1); }
+.x-tile .d { font-size: 12px; color: var(--x-muted); line-height: 1.7; }
+
+/* AI 整理区块：虚线边框 —— 它是「辅助信息」，不该看起来像硬结论 */
+.x-ai {
+  border: 1px dashed var(--x-ai-border);
+  background: var(--x-ai-bg);
+  border-radius: var(--x-r-md);
+  padding: var(--x-s3);
+  font-size: var(--x-fs-body);
+  line-height: 1.85;
+}
+
+/* 骨架屏：加载中的占位条 */
+.x-sk {
+  height: 13px;
+  border-radius: var(--x-r-xs);
+  margin: 9px 0;
+  background: linear-gradient(90deg, var(--x-sk-1), var(--x-sk-2), var(--x-sk-1));
+  background-size: 200% 100%;
+  animation: xshim 1.3s infinite;
+}
+@keyframes xshim {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 表格操作列：右对齐 */
+.acts { text-align: right; white-space: nowrap; }
+/* 表单标签 */
+.label { display: block; font-size: var(--x-fs-small); font-weight: var(--x-fw-bold); color: var(--x-muted); margin-bottom: var(--x-s1); }
+
+/* ==========================================================================
+ * 十八、侧栏状态着色（徽标同步过来的语义色）
+ * --------------------------------------------------------------------------
+ * 徽标亮起时，导航项本身也跟着变色 —— 不用鼠标悬停就知道「自动检测」出问题了。
+ * 用类而不是内联 color：内联优先级压过 .on 状态色，选中态会被冲掉。
+ * ========================================================================== */
+.x-nav a.nav-danger { color: var(--x-bad); }
+.x-nav a.nav-warn { color: var(--x-grey); }
+.x-nav a.nav-danger.on { color: var(--x-bad); }
+.x-nav a.nav-warn.on { color: var(--x-grey); }
+
+/* ==========================================================================
+ * 十九、资料库页（3.1.0 建，3.2.0 换令牌）
+ * --------------------------------------------------------------------------
+ * 入口从 28 条扩到 102 条之后，「一排磁贴」撑不住了。
+ * 这里给的是**密集行**布局：一条入口一行，标题 / 用途 / 怎么查分三层，
+ * 宽度留给文字而不是留白 —— 官方入口表的价值就在字里。
+ * ⚠ 折叠靠 .collapsed 类，不写内联 display —— 与全站「显隐只用类」的纪律一致。
+ * ========================================================================== */
+
+/* 结果页上的「自己去官方核一遍」面板 */
+.x-lib-panel {
+  margin-top: var(--x-s3);
+  border: 1px solid var(--x-soft-border);
+  border-radius: var(--x-r-md);
+  background: var(--x-note-bg);
+  padding: var(--x-s2) var(--x-s3);
+}
+.x-lib-panel-hd {
+  display: flex;
+  align-items: baseline;
+  gap: var(--x-s2);
+  flex-wrap: wrap;
+  margin-bottom: var(--x-s2);
+  font-size: var(--x-fs-body);
+}
+
+/* 搜索框行 */
+.x-lib-search {
+  display: flex;
+  gap: var(--x-s2);
+  align-items: center;
+  margin-bottom: var(--x-s3);
+}
+.x-lib-search .x-input { flex: 1; min-width: 0; }
+
+/* 分组导航：一排小按钮，横向可滚 */
+.x-lib-nav {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.x-lib-nav .x-btn { font-weight: var(--x-fw-medium); }
+.x-lib-nav .x-btn .x-quiet { margin-left: var(--x-s1); font-size: var(--x-fs-micro); }
+
+/* 分组卡片：标题行可点开 */
+.x-lib-group .hd h2 { flex: 0 1 auto; }
+
+/* 条目容器：折叠时整块收起 */
+.x-lib-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: var(--x-s2);
+}
+.x-lib-items.collapsed { display: none; }
+
+/* 单条入口 */
+.x-lib-item {
+  border: 1px solid var(--x-line);
+  border-radius: var(--x-r-md);
+  background: var(--x-kpi-bg);
+  padding: var(--x-s2) 11px 10px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  transition: border-color var(--x-dur-fast) var(--x-ease);
+}
+.x-lib-item:hover { border-color: var(--x-soft-border); }
+.x-lib-item-hd {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+.x-lib-name {
+  font-size: var(--x-fs-body);
+  font-weight: var(--x-fw-bold);
+  color: var(--x-ink);
+  line-height: 1.5;
+}
+.x-lib-tags { flex: none; }
+
+/* 「查得到什么」 */
+.x-lib-what {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--x-ink);
+  opacity: .92;
+}
+/* 「怎么查」—— 比 what 更浅一级，是操作提示不是结论 */
+.x-lib-how {
+  font-size: var(--x-fs-small);
+  line-height: 1.7;
+  color: var(--x-muted);
+  margin-top: var(--x-s1);
+}
+.x-lib-how b {
+  color: var(--x-muted);
+  font-weight: var(--x-fw-bold);
+  margin-right: 5px;
+  padding: 0 var(--x-s1);
+  border-radius: var(--x-r-xs);
+  background: var(--x-chip-bg);
+}
+
+/* 操作行 */
+.x-lib-ops {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--x-s2);
+}
+/* 裸 URL：给「这个地址到底长什么样」，也方便手动复制 */
+.x-lib-url {
+  font-size: var(--x-fs-micro);
+  font-family: var(--x-font-mono);
+  opacity: .8;
+  margin-left: auto;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.x-lib-url:hover { opacity: 1; }
+
+/* 窄屏：条目改成单列 */
+@media (max-width: 760px) {
+  .x-lib-items { grid-template-columns: minmax(0, 1fr); }
+  .x-lib-url { margin-left: 0; width: 100%; }
+}
+
+/* ==========================================================================
+ * 二十、侧栏折叠态
+ * --------------------------------------------------------------------------
+ * 折叠靠 html.nav-mini 这个 class：
+ *   ① 收窄左栏（--x-nav-w 改成窄值）
+ *   ② 用 font-size:0 吃掉裸文本，只留图标
+ *   ③ 徽标换成右上角小红点（收起后没地方放文字徽标）
+ * ⚠ 导航项不许写内联 font-size —— 内联优先级压过这里的 font-size:0，
+ *   那样那一项的文字在窄栏里照样显示并溢出。
+ * ========================================================================== */
+html.nav-mini .x-app-body { grid-template-columns: var(--x-nav-w-mini) minmax(0, 1fr); }
+html.nav-mini .x-nav a {
+  justify-content: center;
+  gap: 0;
+  padding: var(--x-s2) 0;
+  font-size: 0;
+}
+html.nav-mini .x-nav a .ni { font-size: 16px; }
+html.nav-mini .x-nav a .n {
+  display: none;
+}
+/* 小号导航项：折叠态同样要回收文字 */
+html.nav-mini .x-nav a.nav-sub { font-size: 0; }
+/* 徽标收起后改成小红点，不能凭空消失 */
+html.nav-mini .x-nav a.has-flag::after {
+  content: '';
+  position: absolute;
+  top: var(--x-s1); right: var(--x-s2);
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--x-bad);
+}
+html.nav-mini .x-nav a { position: relative; }
+html.nav-mini .x-nav-title,
+html.nav-mini .x-nav-foot { display: none; }
+/* 折叠态：徽标一律收掉，改由右上角小红点代替（has-flag）。
+   ⚠ 特异性必须高于 ".x-nav a .nav-badge.on" = (0,3,1)：
+   这里用 html.nav-mini .x-nav a .nav-badge = (0,3,2)，并且写在后面 —— 双重保险。 */
+html.nav-mini .x-nav a .nav-badge { display: none; }
+
+/* ==========================================================================
+ * 二十一、响应式
+ * ========================================================================== */
+@media (max-width: 900px) {
+  .x-app-body { grid-template-columns: 1fr; }
+  .x-nav {
+    position: static;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--x-line);
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: var(--x-s1) var(--x-s2);
+  }
+  .x-nav-group { display: flex; gap: 2px; }
+  .x-nav-title, .x-nav-foot { display: none; }
+  .x-nav a { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .x-nav a.on { border-left: 0; border-bottom-color: var(--x-brand); }
+  .x-main { padding: var(--x-s3); }
+  .x-top-inner { padding: 0 var(--x-s3); }
+  .x-top-search { flex: 1 1 auto; }
+  /* 窄屏侧栏本就是横向条，再收起等于没导航 */
+  html.nav-mini .x-app-body { grid-template-columns: minmax(0, 1fr); }
+  html.nav-mini .x-nav a { font-size: var(--x-fs-body); justify-content: flex-start; gap: var(--x-s2); padding: 6px var(--x-s4); }
+  html.nav-mini .x-nav a .ni { font-size: 14px; }
+  /* 窄屏是横向条，文字与徽标必须留着 —— 折叠规则在这里一律不生效。
+     ⚠ 特异性要和折叠态那条（html.nav-mini .x-nav a .nav-badge）一样高，
+     且写在它之后，靠源码顺序取胜。 */
+  html.nav-mini .x-nav a.nav-sub { font-size: var(--x-fs-body); }
+  html.nav-mini .x-nav a .nav-badge:not(.on) { display: none; }
+  html.nav-mini .x-nav a .nav-badge.on { display: inline-flex; }
+}
+
+/* ==========================================================================
+ * 二十二、Bulma 兼容层
+ * --------------------------------------------------------------------------
+ * 3.0.1 拆模块后，部分旧视图仍带 Bulma 的状态类
+ * （is-primary / is-small / is-fullwidth / is-light / is-warning / is-success）。
+ * 这里**不引入整个 Bulma**（677KB，且它自带一套与终端风冲突的圆角与配色），
+ * 只把这几个状态类映射到终端风格的实现。
+ *
+ * ⚠ 这是过渡层：新写的组件用 .x-btn / .x-tag，不要再加 Bulma 类。
+ *    等旧视图全部改写成新组件后，整层可以删掉。
+ * ========================================================================== */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: var(--x-h-ctl);
+  padding: 0 var(--x-s3);
+  border-radius: var(--x-r-sm);
+  border: 1px solid var(--x-line);
+  background: var(--x-kpi-bg);
+  color: var(--x-ink);
+  font-size: var(--x-fs-body);
+  font-weight: var(--x-fw-medium);
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background var(--x-dur-fast) var(--x-ease),
+              border-color var(--x-dur-fast) var(--x-ease);
+}
+.button:hover { background: var(--x-nav-hover); border-color: var(--x-soft-border); }
+.button.is-primary {
+  background: var(--x-brand-solid);
+  border-color: var(--x-brand-solid);
+  color: #fff;
+}
+.button.is-primary:hover { background: var(--x-brand-active); border-color: var(--x-brand-active); }
+.button.is-light {
+  background: var(--x-kpi-bg);
+  border-color: var(--x-line);
+  color: var(--x-ink);
+}
+.button.is-light:hover { background: var(--x-nav-hover); }
+.button.is-small { height: var(--x-h-ctl-sm); padding: 0 9px; font-size: var(--x-fs-small); }
+.button.is-fullwidth { width: 100%; justify-content: center; }
+.button:disabled { opacity: .5; cursor: default; }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--x-fs-micro);
+  font-weight: var(--x-fw-bold);
+  line-height: 1.6;
+  padding: 1px 6px;
+  border-radius: var(--x-r-xs);
+  border: 1px solid var(--x-line);
+  background: var(--x-chip-bg);
+  color: var(--x-muted);
+  white-space: nowrap;
+}
+.tag.is-primary { color: var(--x-brand); border-color: color-mix(in srgb, var(--x-brand) 40%, transparent); background: var(--x-sev-bg-info); }
+.tag.is-success { color: var(--x-ok); border-color: color-mix(in srgb, var(--x-ok) 40%, transparent); background: var(--x-sev-bg-ok); }
+.tag.is-warning { color: var(--x-grey); border-color: color-mix(in srgb, var(--x-grey) 40%, transparent); background: var(--x-sev-bg-warn); }
+.tag.is-danger  { color: var(--x-bad); border-color: color-mix(in srgb, var(--x-bad) 40%, transparent); background: var(--x-sev-bg-bad); }
+.tag.is-light { background: var(--x-chip-bg); color: var(--x-muted); }
+
+.notification {
+  border-radius: var(--x-r-sm);
+  padding: var(--x-s2) var(--x-s3);
+  font-size: var(--x-fs-body);
+  line-height: 1.7;
+  border: 1px solid var(--x-line);
+  background: var(--x-kpi-bg);
+  color: var(--x-ink);
+}
+.notification.is-warning { border-color: color-mix(in srgb, var(--x-grey) 45%, transparent); background: var(--x-sev-bg-warn); color: var(--x-grey); }
+.notification.is-danger  { border-color: color-mix(in srgb, var(--x-bad) 45%, transparent); background: var(--x-sev-bg-bad); color: var(--x-bad); }
+.notification.is-success { border-color: color-mix(in srgb, var(--x-ok) 45%, transparent); background: var(--x-sev-bg-ok); color: var(--x-ok); }
+.notification.is-info    { border-color: color-mix(in srgb, var(--x-info) 45%, transparent); background: var(--x-sev-bg-info); color: var(--x-info); }
+.notification.is-light   { background: var(--x-kpi-bg); color: var(--x-ink); }
+
+/* 标签页（名单页用）：终端风的下划线式，不是 Bulma 那种胶囊 */
+.tabs { margin-bottom: 10px; }
+.tabs ul { display: flex; gap: 2px; list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--x-line); }
+.tabs li a {
+  display: block;
+  padding: 6px var(--x-s3);
+  font-size: var(--x-fs-body);
+  color: var(--x-muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--x-dur-fast) var(--x-ease);
+}
+.tabs li a:hover { color: var(--x-ink); }
+.tabs li.is-active a { color: var(--x-brand); border-bottom-color: var(--x-brand); font-weight: var(--x-fw-bold); }
+
+.input, .textarea, .select select {
+  height: var(--x-h-ctl);
+  border-radius: var(--x-r-sm);
+  background: var(--x-input-bg);
+  border: 1px solid var(--x-line);
+  color: var(--x-ink);
+  font-size: var(--x-fs-body);
+  font-family: inherit;
+  padding: 0 10px;
+  outline: none;
+}
+.textarea { height: auto; padding: var(--x-s2) 10px; line-height: 1.7; resize: vertical; }
+.input:focus, .textarea:focus, .select select:focus {
+  border-color: var(--x-brand);
+  background: var(--x-input-bg-focus);
+}
+.input::placeholder { color: var(--x-dot); }
+.select { display: inline-block; position: relative; vertical-align: top; }
+.select select { width: 100%; padding-right: 26px; cursor: pointer; }
+.select:not(.is-multiple):not(.is-loading)::after {
+  content: '';
+  position: absolute;
+  right: 10px; top: 50%;
+  width: 6px; height: 6px;
+  border-right: 1.5px solid var(--x-muted);
+  border-bottom: 1.5px solid var(--x-muted);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+.select.is-small select { height: var(--x-h-ctl-sm); font-size: var(--x-fs-small); }
+
+.table { width: 100%; border-collapse: collapse; font-size: var(--x-fs-body); }
+.table th, .table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--x-line-soft); }
+.table th {
+  font-size: var(--x-fs-micro); font-weight: var(--x-fw-bold); letter-spacing: .06em;
+  text-transform: uppercase; color: var(--x-muted);
+  background: var(--x-kpi-bg); border-bottom: 1px solid var(--x-line);
+  white-space: nowrap;
+}
+.table.is-fullwidth { width: 100%; }
+.table tbody tr:hover td { background: var(--x-kpi-bg); }
+
+.title { font-size: 20px; font-weight: var(--x-fw-bold); letter-spacing: -.3px; margin: 0 0 6px; }
+.subtitle { font-size: 13px; color: var(--x-muted); margin: 0 0 10px; }
+.content { font-size: var(--x-fs-body); line-height: 1.75; }
+.level { display: flex; align-items: center; gap: var(--x-s2); }
+.level-left, .level-right { display: flex; align-items: center; gap: var(--x-s2); }
+.help { color: var(--x-muted); font-size: var(--x-fs-small); }
+
+/* 旧视图里还用了这些工具类 */
+.x-grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.x-alert {
+  display: flex; align-items: center; gap: var(--x-s2);
+  border: 1px solid color-mix(in srgb, var(--x-bad) 45%, transparent);
+  background: var(--x-sev-bg-bad);
+  color: var(--x-bad);
+  padding: 7px 11px;
+  border-radius: var(--x-r-sm);
+  font-size: var(--x-fs-body);
+  margin-bottom: 10px;
+}
+.x-alert.warn { border-color: color-mix(in srgb, var(--x-grey) 45%, transparent); background: var(--x-sev-bg-warn); color: var(--x-grey); }
+.x-alert .d { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+.x-alert a { margin-left: auto; font-weight: var(--x-fw-bold); }
+.x-alert span { color: var(--x-muted); }
+.x-sep { height: 1px; background: var(--x-line); margin: var(--x-s3) 0; }

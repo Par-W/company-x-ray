@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公司X光 · 核验台</title>
+
+<!-- 图标：扫描取景框（scripts/make_icons.py 生成，矢量重绘任意尺寸锐利）。
+     相对路径而非 /assets/：本首页支持 file:// 双击直开，绝对路径会失效。 -->
+<link rel="icon" href="../assets/favicon.ico" sizes="48x48">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+
+<!-- 共享设计系统：全站唯一令牌真源（3.0.1）。
+     必须在 app.css 之前 —— app.css 的组件规则要用上这里的令牌。 -->
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="./css/app.css">
+
+<script>
+/* 首帧同步脚本：必须在 CSS 之后、模块脚本之前执行。
+   ES module 是 defer 的（要等下载解析完才跑），首帧之前来不及定折叠态 ——
+   那样会先按展开态渲染一帧再跳成收起态，看着像闪一下。 */
+(function () {
+  /* ① 防闪白：浅色也必须显式挂 data-theme="light" —— 摘掉属性的话，
+     浏览器会按系统深色渲染表单控件 → 浅色页面里出黑块。 */
+  try {
+    var v = localStorage.getItem('xray.theme') || 'system';
+    var dark = (v === 'dark') ||
+      (v === 'system' && window.matchMedia &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  } catch (e) { /* localStorage 不可用：按浅色渲染，不影响功能 */ }
+
+  /* ② 折叠态：先读偏好，手动模式直接定；自动模式按窗口宽度定。
+     与 js/core/nav.js 的 navShouldMini() 同一口径。 */
+  try {
+    var mode = localStorage.getItem('xray.navMode') || 'auto';
+    var miniPref = localStorage.getItem('xray.navMini');
+    var w = window.innerWidth || 1366;
+    var mini;
+    if (mode === 'manual') mini = miniPref === '1';
+    else mini = (w < 1100 && w > 900);   // <=900 是横向条形态，不折叠
+    if (mini) document.documentElement.classList.add('nav-mini');
+  } catch (e) { /* localStorage 不可用：按展开渲染 */ }
+})();
+</script>
+</head>
+
+<body>
+<div class="x-app">
+  <!-- ================= 顶栏 ================= -->
+  <header class="x-top">
+    <div class="x-top-inner">
+      <button class="x-btn x-top-btn" id="navToggle" type="button"
+              aria-label="收起或展开侧边栏" aria-controls="nav" title="收起 / 展开侧边栏">☰</button>
+      <a class="x-logo" href="#/home">
+        <img src="../assets/icon-48.png" alt="" width="22" height="22">
+        <b>公司X光</b>
+      </a>
+
+      <!-- 顶栏搜索：全站唯一入口。上市公司 / 未上市公司口径切换放在这里。 -->
+      <div class="x-top-search">
+        <select class="x-select" id="invType" style="width:132px;flex:none"
+                title="选择查询类型：上市公司 / 未上市公司">
+          <option value="listed">上市公司口径</option>
+          <option value="unlisted">未上市公司口径</option>
+        </select>
+        <input class="x-input" id="q" type="text" autocomplete="off"
+               placeholder="输入公司或品牌名，例如：贵州茅台 / 蜜雪冰城">
+        <button class="x-btn primary" id="btnVerify" type="button">查询</button>
+      </div>
+
+      <div class="x-top-spacer"></div>
+      <div class="x-top-meta">
+        <!-- 命令面板入口（⌘K）：熟手不必去侧栏找（Linear / Raycast 的做法） -->
+        <button class="x-btn x-top-btn" id="btnCmdk" type="button"
+                title="打开命令面板（Ctrl+K / ⌘K）" aria-label="打开命令面板"
+                style="width:auto;padding:0 8px;gap:5px">
+          <span style="font-size:12px">命令</span><span class="x-kbd">⌘K</span>
+        </button>
+        <span class="x-top-mono" id="pillBackend"><span class="x-dot"></span> 后端</span>
+        <span class="x-top-mono" id="pillExt" style="cursor:pointer" title="点这里配置自动检测">
+          <span class="x-dot"></span> 插件</span>
+        <button class="x-btn x-top-btn" id="btnReload" type="button"
+                title="重新加载页面：取最新的界面与更新日志（设置会保留）">刷新</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="x-app-body">
+    <!-- ================= 左侧导航 ================= -->
+    <aside class="x-nav" id="nav">
+      <div class="x-nav-group">
+        <div class="x-nav-title">核验</div>
+        <a href="#/home" data-route="home">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.6 12 3.2l9 7.4V20a1 1 0 0 1-1 1h-5.2v-6.2H9.2V21H4a1 1 0 0 1-1-1z"/></svg>
+          核验台</a>
+        <a href="#/alerts" data-route="alerts">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.2a5 5 0 0 0-5 5c0 4-1.6 5.6-1.6 5.6h13.2S17 13.2 17 9.2a5 5 0 0 0-5-5zM10 18.2a2 2 0 0 0 4 0"/></svg>
+          检测记录</a>
+        <a href="#/guard" data-route="guard" id="navGuard">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 4.6 6.1v5.6c0 4.4 3.1 7.7 7.4 9 4.3-1.3 7.4-4.6 7.4-9V6.1z"/></svg>
+          自动检测 <span id="navGuardBadge" class="nav-badge danger on">未配置</span></a>
+      </div>
+
+      <div class="x-nav-group">
+        <div class="x-nav-title">监测</div>
+        <a href="#/track" data-route="track">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.6 2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 17.1l-5.3 2.7 1.1-5.9L3.5 9.8l5.9-.8z"/></svg>
+          追踪</a>
+        <a href="#/changes" data-route="changes">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.2V4.8M4 19.2h16M7.4 15.4l4-4.2 3 2.8 4.6-5.4"/></svg>
+          变化监测</a>
+      </div>
+
+      <div class="x-nav-group">
+        <div class="x-nav-title">配置</div>
+        <a href="#/lists" data-route="lists">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="m6.3 17.7 11.4-11.4"/></svg>
+          名单管理</a>
+        <a href="#/library" data-route="library">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.2 4.6h6.3V19.6H4.2zM13.5 4.6h6.3V19.6h-6.3z"/></svg>
+          资料库</a>
+        <a href="#/settings" data-route="settings">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h9.2M17.4 7.5H20M4 16.5h4.4M12.6 16.5H20M15.3 5v5M9.8 14v5"/></svg>
+          设置</a>
+        <a href="#/changelog" data-route="changelog" id="navChangelog">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 3.4h7.4l4.2 4.2v13H6.2zM13.6 3.4v4.2h4.2M9.4 12.4h5.4M9.4 16h5.4"/></svg>
+          更新日志 <span id="navChangelogBadge" class="nav-badge">NEW</span></a>
+      </div>
+
+      <div class="x-nav-group">
+        <div class="x-nav-title">家人端</div>
+        <a href="../family/">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M4.6 20a7.4 7.4 0 0 1 14.8 0z"/></svg>
+          风险告警</a>
+      </div>
+
+      <!-- 加分项：投资评分与人员透视是**独立 Node 服务**（由后端 lifespan 自动拉起），
+           不是后端的静态目录 —— 所以这里指 3210 / 3211 两个端口，
+           指到 /stage/... 会 404（那是源码路径，不是访问路径）。
+           3.0.1 重写侧栏时这两个入口被删掉了，3.0.3 恢复。 -->
+      <div class="x-nav-group">
+        <div class="x-nav-title">加分项</div>
+        <a href="http://127.0.0.1:3210/" target="_blank" rel="noopener">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.2V4.8M4 19.2h16M7.4 15.4l4-4.2 3 2.8 4.6-5.4"/></svg>
+          投资评分</a>
+        <a href="http://127.0.0.1:3211/" target="_blank" rel="noopener">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.6" r="3.2"/><path d="M5.8 20.4a6.2 6.2 0 0 1 12.4 0"/></svg>
+          人员透视</a>
+        <a href="../fund/">
+          <svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="8.4" rx="7.6" ry="3"/><path d="M4.4 8.4v4.2c0 1.7 3.4 3 7.6 3s7.6-1.3 7.6-3V8.4M4.4 12.6v4.2c0 1.7 3.4 3 7.6 3s7.6-1.3 7.6-3v-4.2"/></svg>
+          资金流水</a>
+      </div>
+
+      <div class="x-nav-foot">
+        <div>版本 <span class="v" id="footVer">—</span></div>
+        <div id="navState" class="x-muted"></div>
+      </div>
+    </aside>
+
+    <!-- ================= 工作区 ================= -->
+    <main class="x-main" id="view" role="main"></main>
+  </div>
+</div>
+
+<!-- ================= 命令面板（⌘K）=================
+     结构写死在 HTML 里，内容由 js/core/cmdk.js 现算。
+     ⚠ 显隐只靠 .on 类（不写内联 display）；
+       输入框始终持有真实焦点，方向键只移动"虚拟高亮"（WAI-ARIA combobox）。 -->
+<div class="x-cmdk" id="cmdk" role="dialog" aria-modal="true" aria-label="命令面板">
+  <div class="x-cmdk-box">
+    <div class="x-cmdk-in">
+      <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.2 16.2 4.3 4.3"/></svg>
+      <input id="cmdkInput" type="text" autocomplete="off" spellcheck="false"
+             placeholder="输入命令或页面名，例如：资料库 / 查询 / 设置"
+             role="combobox" aria-expanded="true" aria-controls="cmdkList" aria-autocomplete="list">
+      <span class="x-kbd">Esc</span>
+    </div>
+    <div class="x-cmdk-list" id="cmdkList" role="listbox" aria-label="命令列表"></div>
+    <div class="x-cmdk-foot">
+      <span><span class="x-kbd">↑</span> <span class="x-kbd">↓</span> 选择</span>
+      <span><span class="x-kbd">Enter</span> 执行</span>
+      <span class="sp">共 <b id="cmdkCount">0</b> 条</span></div>
+  </div>
+</div>
+
+<!-- Toast 容器：瞬时反馈（右下角，几秒自散） -->
+<div class="x-toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+<!-- 数据文件（保持 window.* 全局，与旧版一致，离线快照也走同一套） -->
+<script src="library.js"></script>
+<script src="changelog.js"></script>
+<script src="offline-data.js"></script>
+
+<!-- 应用入口：ES module（3.0.1 起拆成 core / views / components 三层） -->
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,350 @@
+/* ==========================================================================
+ * theme.css · 公司X光 设计系统（3.2.0）
+ * --------------------------------------------------------------------------
+ * 视觉方向：专业金融终端（Bloomberg / TradingView / 同花顺）
+ *   - 深色为主：深底浅字是终端类产品的真正特征，不是"暗色模式凑合"
+ *   - 高信息密度：行高紧、字小、数字等宽、表格优先
+ *   - 硬边界：1px 分隔线划分区域，不用大阴影和圆角堆层次
+ *   - 单一强调色：墨蓝，蓝 = 可信
+ *
+ * 3.2.0 参照 34 个主流站点重做了令牌层（依据见 docs/ui-reference.md）：
+ *   ① 间距改**阶梯**（Carbon 的 2/4/8 倍数 + Tailwind 的 4px 基数）
+ *   ② 高度改**四档**（Atlassian：sunken < default < raised < overlay；
+ *      暗色下越"高"表面越亮 —— 暗色里阴影几乎看不见，只能靠底色差）
+ *   ③ 焦点态**双色可见**（GOV.UK：单色焦点环在某些背景上必然失效）
+ *   ④ 字号与行高**成对**定义（Tailwind 的做法，防止改字号忘记改行高）
+ *
+ * ⚠ 四条硬规矩（scripts/check_layout.py 有静态断言守着）：
+ *   ① 组件里禁止写字面色值，一律取本文件的变量。
+ *   ② 浅色与深色必须**完全对等**：每个 --x-* 颜色变量，
+ *      深色块都必须有对应覆盖（[D] 段断言）—— 不许出现"深色下没换过来的"。
+ *   ③ 圆角只认 --x-r-xs / --x-r-sm / --x-r-md 三档。
+ *   ④ 间距只认 --x-s1…--x-s8，不再写 9px / 13px 这类散装数字。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、与主题无关的令牌（间距 / 圆角 / 字号 / 层级 / 动效 / 尺寸）
+ * --------------------------------------------------------------------------
+ * 这些**不随主题变**，放在独立的 :root 块里一次定义。
+ * ⚠ 这个块必须排在最前面 —— check_layout 的 [D] 段取**第一个** :root 块
+ *   作为"主题无关"基准，取错了会把颜色变量当成不该有的东西。
+ * ========================================================================== */
+:root {
+  /* ---------- 间距阶梯：4px 基数 ----------
+     取 4 而不是 Carbon 的 2，是因为正文 12.5px × 行高 1.65 ≈ 20px，
+     用 4 的倍数才对得齐行高；2px 档在这个字号下肉眼看不出差别。
+     档位参照 Carbon $spacing-01…（2/4/8/12/16/24/32/40/48），裁掉 2px 档。 */
+  --x-s1: 4px;
+  --x-s2: 8px;
+  --x-s3: 12px;
+  --x-s4: 16px;
+  --x-s5: 20px;
+  --x-s6: 24px;
+  --x-s7: 32px;
+  --x-s8: 40px;
+
+  /* 旧变量名兼容（app.css 里有存量用法） */
+  --x-gap: var(--x-s3);
+  --x-pad: var(--x-s4);
+
+  /* ---------- 圆角三档 ---------- */
+  --x-r-xs: 4px;   /* 标签、徽标、小按钮 */
+  --x-r-sm: 6px;   /* 按钮、输入框、提示条 */
+  --x-r-md: 8px;   /* 卡片、面板、弹层 */
+
+  /* ---------- 字号阶梯：与行高成对 ----------
+     基准参照阿里云控制台（正文 12 / 行高 20）与终端密度。 */
+  --x-fs-micro:   10.5px;   /* 大写小标签、表头 */
+  --x-fs-small:   11.5px;   /* 次要说明 */
+  --x-fs-body:    12.5px;   /* 正文 */
+  --x-fs-section: 13.5px;   /* 区块标题 */
+  --x-fs-title:   16px;     /* 页面主标题 */
+  --x-fs-display: 22px;     /* 指标大数字 */
+
+  --x-lh-micro:   1.5;
+  --x-lh-small:   1.6;
+  --x-lh-body:    1.65;
+  --x-lh-title:   1.35;
+
+  /* ---------- 字重：只留三档（阿里云控制台只用 400/600） ---------- */
+  --x-fw-normal: 400;
+  --x-fw-medium: 500;
+  --x-fw-bold:   600;
+
+  /* ---------- 字体族 ---------- */
+  --x-font-ui:   "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --x-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* ---------- 层级（Atlassian 的 z-index 分档 100→800，压缩到本项目） ---------- */
+  --x-z-nav:    20;
+  --x-z-top:    30;
+  --x-z-drawer: 60;
+  --x-z-cmdk:   80;
+  --x-z-toast:  90;
+
+  /* ---------- 动效：两档 ---------- */
+  --x-dur-fast: 100ms;
+  --x-dur-base: 160ms;
+  --x-ease:     cubic-bezier(.2, .7, .3, 1);
+
+  /* ---------- 版心与栏宽 ---------- */
+  --x-w-max:      1640px;   /* 工作区最大版心（对齐 AntD 1440 画布 + 侧栏） */
+  --x-w-read:     760px;    /* 长文可读宽度上限（Notion 的做法） */
+  --x-nav-w:      176px;    /* 侧栏展开宽 */
+  --x-nav-w-mini: 52px;     /* 侧栏折叠宽 */
+  --x-drawer-w:   420px;    /* 右侧检视抽屉宽 */
+
+  /* ---------- 控件尺寸：命中区不搞太小（Fluent 建议 ≥32px） ---------- */
+  --x-h-ctl:    32px;
+  --x-h-ctl-sm: 26px;
+  --x-h-top:    50px;
+
+  /* ---------- 焦点环（GOV.UK：必须能在任何背景上看见） ----------
+     用 outline + offset 而不是 box-shadow：
+     outline 永远画在元素**外面**，offset 让环与控件之间露出底色形成隔离，
+     这样环压在实心品牌色按钮上也不会"消失"。 */
+  --x-focus-w:      2px;
+  --x-focus-offset: 2px;
+}
+
+/* ==========================================================================
+ * 二、深色终端（默认 —— 专业终端的主形态）
+ * ========================================================================== */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* ---------- 强调色：墨蓝 ----------
+     ⚠ 深色下要分两个值用：
+       --x-brand        当**文字色**用（链接、图表线、选中态文字）→ 对深底 6.80，很亮，好认
+       --x-brand-solid  当**按钮底色**用（白字压在上面）→ #4a9eff 白字只有 2.75，不达标，
+                        压到 #256fc9 才有 5.00
+     一个值干两件事必然有一处不达标 —— 这是 3.0.1 的 [E] 段对比度断言抓出来的。 */
+  --x-brand:        #4a9eff;
+  --x-brand-solid:  #256fc9;
+  --x-brand-hover:  #74b4ff;
+  --x-brand-active: #1e62b8;
+  --x-accent:       #6fb0ff;
+  --x-note-bar:     #4a9eff;
+  --x-soft-border:  #24405f;
+  --x-nav-on:       #16283f;
+
+  /* ---------- 高度四档（Atlassian） ----------
+     暗色下 **越"高"越亮**：想象表面被正面照亮，抬得越高接的光越多。
+     这和浅色下"越高越白 + 加阴影"是同一条物理直觉的两面。
+       sunken  页面底（比卡片更暗，把内容"凹"进去）
+       default 卡片
+       raised  悬浮卡 / 行选中 / 可拖拽项
+       overlay 弹层 / 抽屉 / 命令面板
+     ⚠ 暗色阴影几乎不可见，层级差主要来自这里，阴影只是辅助。 */
+  --x-surface-sunken:  #080e18;
+  --x-surface:         #101a2b;
+  --x-surface-raised:  #16233a;
+  --x-surface-overlay: #1b2a43;
+
+  /* 兼容旧变量名（大量组件在用，改名会牵动 20+ 个文件）。
+     ⚠ 这里写**字面量**而不是 var(--x-surface-*) —— check_layout 的 [E] 段
+       要拿实际色值算 WCAG 对比度，`var()` 它取不到值会直接判"色板不全"。
+       两处值必须同步改（同色值，只是写两遍）。 */
+  --x-bg:            #080e18;
+  --x-card:          #101a2b;
+  --x-kpi-bg:        #0e1727;
+  --x-chip-bg:       #142033;
+  --x-code-bg:       #16233a;
+  --x-input-bg:      #0e1727;
+  --x-input-bg-focus:#132034;
+  --x-nav-hover:     #142033;
+  --x-note-bg:       #0e1727;
+  --x-ai-bg:         #0e1727;
+  --x-ai-border:     #24405f;
+  --x-sk-1:          #16233a;
+  --x-sk-2:          #1e2e47;
+  --x-line:          #1b2941;
+  --x-line-soft:     #16233a;
+  /* 强边框：表格外框、卡片分组边界（比 --x-line 更实一档） */
+  --x-line-strong:   #2a3d5c;
+
+  /* ---------- 文字 ---------- */
+  --x-ink:           #dfe7f2;
+  --x-muted:         #7d8ea5;
+  --x-dot:           #4a5b73;
+
+  /* ---------- 顶栏（最深的一层，仍用 sunken） ---------- */
+  --x-top-bg:            #080e18;
+  --x-top-ink:           #e8eef7;
+  --x-top-muted:         #6b7d94;
+  --x-top-input-bg:      #101a2b;
+  --x-top-input-bg-focus:#16243a;
+  --x-top-line:          #1b2941;
+
+  /* ---------- 语义色：终端用饱和度更高的红绿黄 ----------
+     ⚠ 中文金融界面是「红涨绿跌」，但本产品的红是**风险红**（与股市红含义不同）。
+       所以任何红/绿**必须配文字**，不能只靠颜色 —— 语义不同的人会读反。 */
+  --x-ok:            #4ec9a0;
+  --x-bad:           #f0776f;
+  --x-grey:          #e8b04b;
+  --x-info:          #4a9eff;
+  --x-sev-bg-bad:    #2a1518;
+  --x-sev-bg-warn:   #2a2313;
+  --x-sev-bg-ok:     #10251f;
+  --x-sev-bg-info:   #101d33;
+
+  /* ---------- 图表 ---------- */
+  --x-chart-fill:   rgba(74,158,255,.16);
+  --x-chart-window: rgba(74,158,255,.12);
+  --x-svg-surface:  #101a2b;
+  --x-svg-line:     #1b2941;
+  --x-svg-ink:      #dfe7f2;
+
+  /* ---------- 阴影：终端里几乎不用阴影，用边框划线 ----------
+     只有 overlay 档（弹层/命令面板/抽屉）给一点，否则浮不起来。 */
+  --x-card-shadow:    0 1px 0 rgba(255,255,255,.02);
+  --x-shadow-raised:  0 1px 2px rgba(0,0,0,.35);
+  --x-shadow-overlay: 0 8px 24px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35);
+
+  /* ---------- 遮罩（抽屉/命令面板背后的压暗层） ---------- */
+  --x-scrim: rgba(4,8,14,.62);
+
+  /* ---------- 选中态背景（表格行、命令面板高亮） ---------- */
+  --x-sel-bg: #16283f;
+
+  /* ---------- Bulma 主色与圆角对齐 ---------- */
+  --bulma-primary-h: 212; --bulma-primary-s: 100%; --bulma-primary-l: 65%;
+  --bulma-radius: 0.375rem; --bulma-radius-small: 0.25rem;
+  --bulma-radius-medium: 0.5rem; --bulma-radius-large: 0.5rem;
+}
+
+/* ==========================================================================
+ * 三、浅色终端（Bloomberg 网页版 —— 同样专业，不是"降级版"）
+ * ==========================================================================
+ * 每个 --x-* 颜色变量都在这里逐个覆盖 —— 与深色一一对应，
+ * 不允许深色有、浅色没有（那会让两套模式长得不一样）。
+ */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --x-brand:        #0d5fc8;
+  --x-brand-solid:  #0d5fc8;
+  --x-brand-hover:  #1a76e3;
+  --x-brand-active: #0a4ea8;
+  --x-accent:       #3d7fe0;
+  --x-note-bar:     #3d7fe0;
+  --x-soft-border:  #b8d4f8;
+  --x-nav-on:       #e8f1fe;
+
+  /* 高度四档：浅色下越高越"白 + 阴影"（暗色下是越高越亮，见上） */
+  --x-surface-sunken:  #eef1f6;
+  --x-surface:         #ffffff;
+  --x-surface-raised:  #ffffff;
+  --x-surface-overlay: #ffffff;
+
+  --x-bg:            #eef1f6;
+  --x-card:          #ffffff;
+  --x-kpi-bg:        #f7f9fc;
+  --x-chip-bg:       #eef2f7;
+  --x-code-bg:       #eaeff6;
+  --x-input-bg:      #ffffff;
+  --x-input-bg-focus:#ffffff;
+  --x-nav-hover:     #eef2f7;
+  --x-note-bg:       #f2f6fc;
+  --x-ai-bg:         #f2f6fc;
+  --x-ai-border:     #c5d9f2;
+  --x-sk-1:          #eaeff6;
+  --x-sk-2:          #dde5ef;
+  --x-line:          #dfe2e6;
+  --x-line-soft:     #e8edf4;
+  --x-line-strong:   #c6d0dd;
+
+  --x-ink:           #17202e;
+  --x-muted:         #5b6a7d;
+  --x-dot:           #94a3b8;
+
+  --x-top-bg:            #1c2b40;
+  --x-top-ink:           #e8eef7;
+  --x-top-muted:         #93a6bd;
+  --x-top-input-bg:      #24354c;
+  --x-top-input-bg-focus:#2d4160;
+  --x-top-line:          #2c3f58;
+
+  --x-ok:            #0f7a54;
+  --x-bad:           #c0392f;
+  --x-grey:          #9c6210;
+  --x-info:          #0d5fc8;
+  --x-sev-bg-bad:    #fdeceb;
+  --x-sev-bg-warn:   #fdf4e3;
+  --x-sev-bg-ok:     #e9f7f1;
+  --x-sev-bg-info:   #eef4fd;
+
+  --x-chart-fill:   rgba(13,95,200,.10);
+  --x-chart-window: rgba(13,95,200,.12);
+  --x-svg-surface:  #ffffff;
+  --x-svg-line:     #e2e8f0;
+  --x-svg-ink:      #374151;
+
+  --x-card-shadow:    0 1px 2px rgba(23,32,46,.05);
+  --x-shadow-raised:  0 1px 3px rgba(23,32,46,.10), 0 1px 2px rgba(23,32,46,.06);
+  --x-shadow-overlay: 0 12px 32px rgba(23,32,46,.16), 0 2px 8px rgba(23,32,46,.08);
+
+  --x-scrim: rgba(23,32,46,.34);
+  --x-sel-bg: #e8f1fe;
+
+  --bulma-primary-h: 215; --bulma-primary-s: 100%; --bulma-primary-l: 45%;
+}
+
+/* ==========================================================================
+ * 四、基础排版
+ * ========================================================================== */
+html, body { background: var(--x-bg); color: var(--x-ink); }
+
+body {
+  font-family: var(--x-font-ui);
+  font-size: var(--x-fs-body);
+  line-height: var(--x-lh-body);
+  font-variant-numeric: tabular-nums;   /* 数字上下对齐，表格才像正经报告 */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: var(--x-brand); text-underline-offset: 2px; }
+a:hover { color: var(--x-brand-hover); }
+
+/* ---------- 焦点态：双色隔离（GOV.UK 的做法） ----------
+   ⚠ 这是全站可访问性的地基，任何组件都不许用 `outline: none` 覆盖掉。
+     outline-offset 让环与控件之间露出页面底色 —— 环压在实心品牌色按钮上
+     也能看清（单色环在同类底色上会"消失"，这是 GOV.UK 明确点出的失败模式）。 */
+:focus-visible {
+  outline: var(--x-focus-w) solid var(--x-brand);
+  outline-offset: var(--x-focus-offset);
+}
+/* 鼠标点击不显示焦点环（键盘才显示），但不能把 :focus-visible 一起关掉 */
+:focus:not(:focus-visible) { outline: none; }
+
+/* ---------- 滚动条：细、低对比 ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--x-sk-2);
+  border-radius: var(--x-r-xs);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--x-dot); background-clip: padding-box; }
+
+/* ---------- 数字等宽 ---------- */
+.num, .x-kpi .v, .x-metric b, td.num, th.num, .x-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ---------- 选中文本 ---------- */
+::selection { background: color-mix(in srgb, var(--x-brand) 32%, transparent); }
+
+/* ---------- 动效统一（尊重系统设置） ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

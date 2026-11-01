@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 盾牌主体 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,18 L54,18 C66,18 76,22 82,28 L82,50 C82,66 70,78 54,84 C38,78 26,66 26,50 L26,28 C32,22 42,18 54,18 Z" />
+    <!-- X 光扫描线效果 - 绿色 -->
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M34,42 L74,42 L74,46 L34,46 Z" />
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M38,52 L70,52 L70,56 L38,56 Z" />
+    <!-- 盾牌中央对勾 -->
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M42,52 L50,60 L66,44 L70,48 L50,68 L38,56 Z" />
+</vector>

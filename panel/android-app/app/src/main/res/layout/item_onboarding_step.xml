@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingHorizontal="@dimen/page_padding_horizontal"
+    android:paddingVertical="@dimen/page_padding_vertical">
+
+    <!-- 大图标（96dp，居中） -->
+    <ImageView
+        android:id="@+id/ivIcon"
+        android:layout_width="@dimen/icon_size_xxlarge"
+        android:layout_height="@dimen/icon_size_xxlarge"
+        android:src="@drawable/ic_shield"
+        android:contentDescription="@null"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="@dimen/spacing_xlarge" />
+
+    <!-- 标题文字（24sp，加粗，居中，距图标24dp） -->
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/ivIcon"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="@dimen/spacing_large" />
+
+    <!-- 描述文字（18sp，多行，距标题16dp，行间距宽松） -->
+    <TextView
+        android:id="@+id/tvDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/text_size_body"
+        android:textColor="@color/text_secondary"
+        android:gravity="center"
+        android:lineSpacingExtra="@dimen/line_spacing_large"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="@dimen/spacing_medium" />
+
+    <!-- 权限状态显示区域（默认 GONE，权限步骤才显示） -->
+    <LinearLayout
+        android:id="@+id/layoutPermissionStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:background="@drawable/bg_alert_green"
+        android:paddingHorizontal="@dimen/spacing_large"
+        android:paddingVertical="@dimen/spacing_small"
+        app:layout_constraintTop_toBottomOf="@id/tvDescription"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="@dimen/spacing_large">
+
+        <TextView
+            android:id="@+id/tvPermissionStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/text_size_body"
+            android:textStyle="bold"
+            android:textColor="@color/on_risk_low" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
