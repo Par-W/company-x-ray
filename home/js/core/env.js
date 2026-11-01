@@ -14,6 +14,20 @@
   export const IS_LOCAL = location.protocol === 'file:';
   export const ORIGIN_BASE = IS_LOCAL ? '' : location.origin;
   export const _fetch = window.fetch.bind(window);
+  /* 运行态：null=还没判定 / false=确有后端 / true=静态托管（后端不存在）。
+     静态托管（AppWrite Sites 之类）时，/api/* 会落到静态服务器上返回一张 HTML 404，
+     不是 JSON。那种情况下必须**显式**切到演示态并挂牌，不能静默给一份看起来像
+     实时核验的结论 —— 这个产品最不能干的就是让人分不清"核过了"和"没核过"。 */
+  export const RUNTIME = { demo: null };
+  function enterHostedDemo(path, init) {
+    RUNTIME.demo = true;
+    showHostedDemoNotice();
+    if (path.indexOf('/api/v2/query') === 0) return offlineQueryResponse(init && init.body);
+    return Promise.resolve(new Response(JSON.stringify({
+      ok: false, demo: true,
+      note: '当前是静态托管演示版，没有后端：该接口不可用。',
+    }), { status: 503, headers: { 'Content-Type': 'application/json' } }));
+  }
   export function offlineQueryResponse(body) {
     let name = '';
     try { name = (typeof body === 'string' ? JSON.parse(body || '{}') : (body || {})).name || ''; }
@@ -59,6 +73,22 @@
       if (IS_LOCAL && input.indexOf('/api/v2/query') === 0) {
         return offlineQueryResponse(init && init.body);
       }
+      /* 托管站：先按真实后端发一次。只有"失败且响应不是 JSON"才认定这个域名下没有后端
+         （静态服务器给的是 HTML 404 页）。后端在、只是这个请求出错时必须原样返回，
+         否则会把"接口报错"错判成"没有后端"，那时给出的离线结论就是假的。
+         ⚠ 只对 /api/ 前缀做这个判定：静态资源 404 不该把整个应用推进演示态。 */
+      if (!IS_LOCAL) {
+        const isApi = input.indexOf('/api/') === 0;
+        if (!isApi) { input = ORIGIN_BASE + input; return _fetch(input, init); }
+        // 已经判定过没有后端：不再每个请求都去打一次网络
+        if (RUNTIME.demo === true) return enterHostedDemo(input, init);
+        return _fetch(ORIGIN_BASE + input, init).then((r) => {
+          if (r.ok) { RUNTIME.demo = false; return r; }
+          const ct = (r.headers.get('content-type') || '').toLowerCase();
+          if (ct.indexOf('application/json') >= 0) { RUNTIME.demo = false; return r; }
+          return enterHostedDemo(input, init);
+        }, () => enterHostedDemo(input, init));
+      }
       input = ORIGIN_BASE + input;        // 其余 -> file:///api/...（会失败，但错误可读）
     }
     return _fetch(input, init);
@@ -83,6 +113,28 @@
   export function hideLocalNotice() {
     const el = document.getElementById('xrayLocalNotice');
     if (el && el.parentNode) el.parentNode.removeChild(el);
+  }
+
+  /* 托管演示态横幅：**常驻**，不自动消失。
+     这份站点是静态托管，没有后端 —— 查询用的是打包时的离线快照。
+     挂牌措辞必须同时说清三件事：这是演示、数据是快照、查无记录 ≠ 有问题。 */
+  export function showHostedDemoNotice() {
+    if (document.getElementById('xrayDemoNotice')) return;
+    const host = document.body || document.documentElement;
+    if (!host) return;
+    const bar = document.createElement('div');
+    bar.id = 'xrayDemoNotice';
+    bar.style.cssText = 'position:sticky;top:0;z-index:99999;padding:10px 14px;'
+      + 'background:var(--x-sev-bg-warn);border-bottom:1px solid var(--x-line);color:var(--x-ink);'
+      + 'font:13px/1.7 system-ui,-apple-system,sans-serif';
+    bar.innerHTML = '<b>静态演示版</b>：本页托管在静态站点上，<b>没有后端</b>，'
+      + '查询走的是打包时的内置快照（' + ((window.XrayOfflineUnified || {})._count || 0)
+      + ' 个已复核品牌），<b>不是实时核验</b>。'
+      + '<b>查无记录 ≠ 有问题</b>，只代表不在这份快照里。'
+      + '投资评分 / 人员透视 / 变化追踪 / 名单管理需要后端，此版本不可用。'
+      + '<br>要用完整功能：在本机项目根双击 <code>启动并打开首页.bat</code>，'
+      + '或访问 <a href="http://127.0.0.1:8000/home/">http://127.0.0.1:8000/home/</a>。';
+    host.insertBefore(bar, host.firstChild);
   }
 
   if (IS_LOCAL) {
