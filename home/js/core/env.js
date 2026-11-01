@@ -14,32 +14,75 @@
   export const IS_LOCAL = location.protocol === 'file:';
   export const ORIGIN_BASE = IS_LOCAL ? '' : location.origin;
   export const _fetch = window.fetch.bind(window);
-  /* 运行态：null=还没判定 / false=确有后端 / true=静态托管（后端不存在）。
-     静态托管（AppWrite Sites 之类）时，/api/* 会落到静态服务器上返回一张 HTML 404，
-     不是 JSON。那种情况下必须**显式**切到演示态并挂牌，不能静默给一份看起来像
-     实时核验的结论 —— 这个产品最不能干的就是让人分不清"核过了"和"没核过"。 */
-  export const RUNTIME = { demo: null };
-  /* 后端是否存在：只探一次，之后所有 /api/ 请求复用这个结论。
-     ⚠ 为什么不是"看这个请求本身失败没"：AppWrite 边缘对不存在的路径返回的是
+  /* 运行态：null=还没判定。三档，按能力从强到弱：
+       'local' —— 本机后端（全功能）
+       'cloud' —— 云端只读后端（AppWrite Function，能联网核验，但无 Node 引擎、无持久磁盘）
+       'demo'  —— 只有界面 + 打包时的离线快照
+     为什么要分三档而不是"有/没有后端"：三者的能力边界差别很大，
+     而用户最需要知道的是"我现在看到的东西是哪一档算出来的"。
+     RUNTIME.demo 保留为「不是本机后端」的简写，兼容既有探针与文案判断。 */
+  export const CLOUD = {
+    endpoint: 'https://sgp.cloud.appwrite.io/v1',
+    project: '6ae6a81d0010c6980d02',
+    fn: 'xray-api',
+  };
+  export const RUNTIME = { mode: null, demo: null };
+  /* 判定顺序：本机后端 → 云端函数 → 离线快照。
+     ⚠ 为什么不用"看这个请求本身失败没"：AppWrite 边缘对不存在的路径返回的是
        **JSON 404**（{"type":"general_route_not_found"}），和真实 FastAPI 的
        {"detail":"Not Found"} 长得一样 —— 按"响应不是 JSON 就算没后端"判**会漏判**，
        实测托管站上 /api/v2/query 正是 application/json 的 404。
      所以用一个**形状已知**的接口做探针：/api/v1/ext/status 正常时必有 state 字段。 */
-  let _backendProbe = null;
-  export function backendReady() {
-    if (RUNTIME.demo !== null) return Promise.resolve(RUNTIME.demo);
-    if (_backendProbe) return _backendProbe;
-    _backendProbe = _fetch(ORIGIN_BASE + '/api/v1/ext/status', { cache: 'no-store' })
+  let _modeProbe = null;
+  function probeLocal() {
+    return _fetch(ORIGIN_BASE + '/api/v1/ext/status', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json().catch(() => null) : null))
-      .then((d) => {
-        RUNTIME.demo = !(d && typeof d.state === 'string');
-        if (RUNTIME.demo) showHostedDemoNotice();
-        return RUNTIME.demo;
-      })
-      .catch(() => { RUNTIME.demo = true; showHostedDemoNotice(); return true; });
-    return _backendProbe;
+      .then((d) => !!(d && typeof d.state === 'string'))
+      .catch(() => false);
+  }
+  function probeCloud() {
+    return callCloud('/x/status', {}).then((r) => {
+      if (r.status !== 200) return false;
+      return r.text().then((t) => { try { const j = JSON.parse(t); return !!(j && (j.ok || j.status || j.service)); } catch (e) { return false; } });
+    }).catch(() => false);
+  }
+  export function backendReady() {
+    if (RUNTIME.mode) return Promise.resolve(RUNTIME.mode);
+    if (_modeProbe) return _modeProbe;
+    _modeProbe = probeLocal()
+      .then((ok) => (ok ? 'local' : probeCloud().then((c) => (c ? 'cloud' : 'demo'))))
+      .catch(() => 'demo')
+      .then((mode) => {
+        RUNTIME.mode = mode;
+        RUNTIME.demo = (mode === 'demo');
+        if (mode === 'demo') showHostedDemoNotice();
+        else if (mode === 'cloud') showCloudNotice();
+        return mode;
+      });
+    return _modeProbe;
+  }
+  /* 把所有 /api/* 转成一次 AppWrite 函数调用（Lambda 式，不是常驻端口）。
+     函数把真实响应塞在 responseBody 里，这里还原成一个标准 Response，
+     上层代码（actions.js 等）完全不用知道自己连的是本机还是云端。 */
+  function callCloud(path, init) {
+    const method = ((init && init.method) || 'GET').toUpperCase();
+    const body = (init && init.body != null) ? String(init.body) : '';
+    return _fetch(CLOUD.endpoint + '/functions/' + CLOUD.fn + '/executions', {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', 'X-Appwrite-Project': CLOUD.project },
+      body: JSON.stringify({
+        body: body, method: method, path: path,
+        headers: { 'content-type': 'application/json' },
+      }),
+    }).then((r) => r.json()).then((d) => {
+      const status = Number(d.responseStatusCode || 200);
+      return new Response(String(d.responseBody == null ? '' : d.responseBody),
+        { status: status, headers: { 'Content-Type': 'application/json' } });
+    });
   }
   function enterHostedDemo(path, init) {
+    RUNTIME.mode = 'demo';
     RUNTIME.demo = true;
     showHostedDemoNotice();
     if (path.indexOf('/api/v2/query') === 0) return offlineQueryResponse(init && init.body);
@@ -97,8 +140,11 @@
          判定之前先等探针结果，避免首屏那几个请求各判一次、出现前后不一致。 */
       if (!IS_LOCAL) {
         if (input.indexOf('/api/') !== 0) { input = ORIGIN_BASE + input; return _fetch(input, init); }
-        return backendReady().then((demo) => (
-          demo ? enterHostedDemo(input, init) : _fetch(ORIGIN_BASE + input, init)));
+        return backendReady().then((mode) => {
+          if (mode === 'local') return _fetch(ORIGIN_BASE + input, init);
+          if (mode === 'cloud') return callCloud(input, init);
+          return enterHostedDemo(input, init);
+        });
       }
       input = ORIGIN_BASE + input;        // 其余 -> file:///api/...（会失败，但错误可读）
     }
@@ -124,6 +170,27 @@
   export function hideLocalNotice() {
     const el = document.getElementById('xrayLocalNotice');
     if (el && el.parentNode) el.parentNode.removeChild(el);
+  }
+
+  /* 云端只读版横幅。与"离线快照版"必须写得不一样 ——
+     前者是**真的联网核验**，后者只是打包时的旧快照；
+     两句话都挂同一条文案，等于把两者混为一谈。 */
+  export function showCloudNotice() {
+    if (document.getElementById('xrayCloudNotice') ||
+        document.getElementById('xrayDemoNotice')) return;
+    const host = document.body || document.documentElement;
+    if (!host) return;
+    const bar = document.createElement('div');
+    bar.id = 'xrayCloudNotice';
+    bar.style.cssText = 'position:sticky;top:0;z-index:99999;padding:10px 14px;'
+      + 'background:var(--x-sev-bg-warn);border-bottom:1px solid var(--x-line);color:var(--x-ink);'
+      + 'font:13px/1.7 system-ui,-apple-system,sans-serif';
+    bar.innerHTML = '<b>云端只读版</b>：核验由云端引擎完成，<b>联网查证是真的</b>'
+      + '（巨潮、东方财富、交易所等一手来源），但每次查询约需 <b>10–20 秒</b>。'
+      + '<b>投资评分、人员透视、名单编辑、追踪、AI 设置需要本机版</b>'
+      + '（依赖本机 Node 引擎与可持久写入的磁盘），本页点这些会明确提示不可用。'
+      + '<br>要用全功能：回项目根双击 <code>启动并打开首页.bat</code>。';
+    host.insertBefore(bar, host.firstChild);
   }
 
   /* 托管演示态横幅：**常驻**，不自动消失。
@@ -190,6 +257,8 @@
        （横幅说没有后端，胶囊说在线），必须按 r.ok 判。 */
     try { const r = await fetch('/api/v1/ext/status', { cache: 'no-store' });
       if (!r.ok) throw new Error('http ' + r.status);
-      el.innerHTML = '<span class="x-dot live"></span>后端在线'; el.style.color = 'var(--x-ok)';
+      const cloud = RUNTIME.mode === 'cloud';
+      el.innerHTML = '<span class="x-dot live"></span>' + (cloud ? '云端在线' : '后端在线');
+      el.style.color = 'var(--x-ok)';
     } catch (e) { el.innerHTML = '<span class="x-dot dead"></span>后端离线'; el.style.color = 'var(--x-bad)'; }
   }
