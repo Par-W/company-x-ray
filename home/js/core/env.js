@@ -41,10 +41,12 @@
       .catch(() => false);
   }
   function probeCloud() {
-    return callCloud('/x/status', {}).then((r) => {
-      if (r.status !== 200) return false;
-      return r.text().then((t) => { try { const j = JSON.parse(t); return !!(j && (j.ok || j.status || j.service)); } catch (e) { return false; } });
-    }).catch(() => false);
+    // ⚠ 探针必须用**和本机完全相同**的那个接口与判据（/api/v1/ext/status 必有 state）。
+    //   换成 /x/status 会踩坑：它返回 {"engines":{...}}，按 ok/status 判会误判成"没有云端后端"。
+    return callCloud('/api/v1/ext/status', {})
+      .then((r) => (r.ok ? r.json().catch(() => null) : null))
+      .then((d) => !!(d && typeof d.state === 'string'))
+      .catch(() => false);
   }
   export function backendReady() {
     if (RUNTIME.mode) return Promise.resolve(RUNTIME.mode);
