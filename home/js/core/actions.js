@@ -4,15 +4,10 @@ import { esc, sk, state } from '../core/env.js';
 import { radar } from '../core/charts.js';
 import { recentPush } from '../core/store.js';
 import { renderMerged, secHtml, uniSeq } from '../components/result.js';
-
-  export async function postJSON(url, body) {
-    const r = await fetch(url, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body || {}),
-    });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    return r.json();
-  }
+/* 统一走 core/api.js —— 这里原本自己抄了一份 postJSON（没有超时、错误只剩 'HTTP 501'），
+   而 api.js 的注释写着"所有 fetch 集中在这里"。两份实现 = 两条口径，
+   云端 501 的那句人话就是在这条缝里丢掉的。 */
+import { postJSON, TIMEOUT_CLOUD } from './api.js';
   /* 查询名的**唯一取值口径**。
      ⚠ 页面上有两个输入框：顶栏的 #q 与首页工作区的 #q2。
        以前只读 #q，而工作区的 #q2 → #q 是靠 input 事件委托同步的 ——
@@ -36,14 +31,16 @@ import { renderMerged, secHtml, uniSeq } from '../components/result.js';
     msg('正在查询…（可信度先出，投资评分要联网取行情/财报，通常 2–20 秒）');
     $('#verdictBox').innerHTML = sk(6);
 
-    // 投资评分先发出去、不 await：它与本地可信度并行，不互相拖慢
+    // 投资评分先发出去、不 await：它与本地可信度并行，不互相拖慢。
+    // 超时给足：本机要联网取行情/财报（界面文案写着"通常 2–20 秒"），
+    // 云端那一档会在闸门处直接 501，不会真跑满。
     let invErr = '';
-    const pInvest = postJSON('/api/v1/invest', { name, type: invType })
+    const pInvest = postJSON('/api/v1/invest', { name, type: invType }, { timeout: 45000 })
       .catch((e) => { invErr = String((e && e.message) || e); return null; });
 
     let uni = null;
     try {
-      uni = await postJSON('/api/v2/query', { name, cloud: false });   // ① 本地立刻出
+      uni = await postJSON('/api/v2/query', { name, cloud: false }, { timeout: 45000 });   // ① 本地立刻出
     } catch (e) {
       if (my === uniSeq.n) {
         $('#verdictBox').innerHTML = '<p class="x-muted">查询失败（后端未响应）。</p>';
@@ -60,7 +57,7 @@ import { renderMerged, secHtml, uniSeq } from '../components/result.js';
     renderMerged(uni, inv, { phase: 'invest', typeLabel, invErr, invType });
 
     try {                                                               // ③ 云端线索并入
-      const full = await postJSON('/api/v2/query', { name, cloud: true });
+      const full = await postJSON('/api/v2/query', { name, cloud: true }, { timeout: TIMEOUT_CLOUD });
       if (my !== uniSeq.n) return;
       state.lastVerdict = full.verdict;
       renderMerged(full, inv, { phase: 'done', typeLabel, invErr, invType });
@@ -194,14 +191,23 @@ import { renderMerged, secHtml, uniSeq } from '../components/result.js';
     if (el) el.textContent = t;
   }
   export async function loadSettings() {
+    /* 这一页的输入框只在「设置」页存在；从首页/别处调到它时容器是空的。
+       3.3.1 之前 catch 里又写了一遍 `$('#setKeyState').textContent`，
+       于是 catch 自己也炸 —— 一个"没这个元素"被他写成了未处理的 Promise 异常。 */
     try {
       const d = await (await fetch('/api/v1/settings/ai', { cache: 'no-store' })).json();
-      $('#setKeyState').textContent = d.has_key
-        ? `当前：已配置（来源：${d.source}${d.key_masked ? '，' + d.key_masked : ''}${d.env_override ? '；环境变量优先' : ''}）`
-        : '当前：未配置';
-      $('#setModel').value = d.model || '';
-      $('#setBase').value = d.base_url || '';
-    } catch (e) { $('#setKeyState').textContent = '读取设置失败'; }
+      const st = $('#setKeyState');
+      if (st) {
+        st.textContent = d.has_key
+          ? `当前：已配置（来源：${d.source}${d.key_masked ? '，' + d.key_masked : ''}${d.env_override ? '；环境变量优先' : ''}）`
+          : '当前：未配置';
+      }
+      const md = $('#setModel'); if (md) md.value = d.model || '';
+      const bs = $('#setBase'); if (bs) bs.value = d.base_url || '';
+    } catch (e) {
+      const st = $('#setKeyState');
+      if (st) st.textContent = '读取设置失败';
+    }
   }
   export function setMsg(t, cls) {
     const el = $('#setMsg'); el.style.display = 'block';

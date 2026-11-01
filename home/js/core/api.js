@@ -7,7 +7,15 @@
  *   ③ 换接口地址只改这一处。
  * ========================================================================== */
 
-const TIMEOUT = 15000;
+/* 默认档：本机接口正常都在 1 秒内。留 25 秒是为了**云端只读版**——
+   它走 AppWrite 函数（Lambda 式冷启动，实测首次调用 9~10 秒），
+   同一个 getJSON 既服务本机也服务云端，卡 15 秒会把冷启动误报成"后端未响应"。 */
+const TIMEOUT = 25000;
+/* 云端版是 Lambda 式冷启动 + 真去巨潮/东财核验，10–20 秒是常态（冷启动更久）。
+   用本机那套 15 秒去卡它，用户看到的就是「查询失败（后端未响应）」——
+   功能其实好的，是我们自己先放弃了。所以给云端单独一档。
+   本机路径仍用 15 秒：它慢到 15 秒就是真出问题了。 */
+export const TIMEOUT_CLOUD = 60000;
 
 /** 带超时的 fetch（AbortController）。 */
 async function fetchWithTimeout(url, opts = {}) {
@@ -20,19 +28,34 @@ async function fetchWithTimeout(url, opts = {}) {
   }
 }
 
-export async function postJSON(url, body) {
+/* 失败时把后端/云端说的**理由**带出来。
+   3.3.1 之前一律 `new Error('HTTP 501')` —— 云端闸门明明回了
+   "托管版只提供只读核验…投资评分需要本机版"，界面上却只剩一个 HTTP 状态码，
+   用户只会以为产品坏了。宁可显示一句长话，也不要一个没有信息量的数字。 */
+async function apiError(r) {
+  let payload = null;
+  try { payload = await r.json(); } catch (e) { /* 静态托管的 HTML 404：没有 JSON */ }
+  const note = payload && (payload.note || payload.detail || payload.error);
+  const err = new Error(note ? String(note) : ('HTTP ' + r.status));
+  err.status = r.status;
+  err.code = (payload && payload.code) || '';
+  return err;
+}
+
+export async function postJSON(url, body, opts = {}) {
   const r = await fetchWithTimeout(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body || {}),
+    timeout: opts.timeout,
   });
-  if (!r.ok) throw new Error('HTTP ' + r.status);
+  if (!r.ok) throw await apiError(r);
   return r.json();
 }
 
-export async function getJSON(url) {
-  const r = await fetchWithTimeout(url);
-  if (!r.ok) throw new Error('HTTP ' + r.status);
+export async function getJSON(url, opts = {}) {
+  const r = await fetchWithTimeout(url, { timeout: opts.timeout });
+  if (!r.ok) throw await apiError(r);
   return r.json();
 }
 

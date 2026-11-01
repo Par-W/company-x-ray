@@ -43,10 +43,16 @@
   function probeCloud() {
     // ⚠ 探针必须用**和本机完全相同**的那个接口与判据（/api/v1/ext/status 必有 state）。
     //   换成 /x/status 会踩坑：它返回 {"engines":{...}}，按 ok/status 判会误判成"没有云端后端"。
-    return callCloud('/api/v1/ext/status', {})
+    // ⚠ 必须给上限：后端在但极慢时，探针不设限会让**每一个** /api 请求都挂在
+    //   backendReady() 上，界面表现是"点什么都没反应"，比明确报错更难查。
+    //   30 秒 = 实测冷启动（约 10 秒）的三倍，超了就是真出事。
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => { try { ctrl.abort(); } catch (e) { /* 忽略 */ } }, 30000);
+    return callCloud('/api/v1/ext/status', { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json().catch(() => null) : null))
       .then((d) => !!(d && typeof d.state === 'string'))
-      .catch(() => false);
+      .catch(() => false)
+      .then((v) => { clearTimeout(timer); return v; });
   }
   export function backendReady() {
     if (RUNTIME.mode) return Promise.resolve(RUNTIME.mode);
@@ -72,6 +78,9 @@
     return _fetch(CLOUD.endpoint + '/functions/' + CLOUD.fn + '/executions', {
       method: 'POST',
       cache: 'no-store',
+      /* 把上层的 AbortSignal 透传下来：否则 core/api.js 那套超时对云端**完全失效**
+         （请求照跑，调用方却已经放弃了），云端一卡就是无限等。 */
+      signal: init && init.signal,
       headers: { 'Content-Type': 'application/json', 'X-Appwrite-Project': CLOUD.project },
       body: JSON.stringify({
         body: body, method: method, path: path,
@@ -189,9 +198,10 @@
       + 'font:13px/1.7 system-ui,-apple-system,sans-serif';
     bar.innerHTML = '<b>云端只读版</b>：核验由云端引擎完成，<b>联网查证是真的</b>'
       + '（巨潮、东方财富、交易所等一手来源），但每次查询约需 <b>10–20 秒</b>。'
-      + '<b>投资评分、人员透视、名单编辑、追踪、AI 设置需要本机版</b>'
-      + '（依赖本机 Node 引擎与可持久写入的磁盘），本页点这些会明确提示不可用。'
-      + '<br>要用全功能：回项目根双击 <code>启动并打开首页.bat</code>。';
+      + '<b>投资评分、人员透视、名单编辑、追踪、AI 设置只在「本机版」（桌面客户端）提供</b>'
+      + '（依赖本机 Node 引擎与可持久写入的磁盘）—— 本页点这些会明确说明"托管版不提供"，'
+      + '那是能力边界，<b>不是站点坏了</b>。'
+      + '<br>要看那几项：用本机版（项目根双击 <code>启动并打开首页.bat</code>）。';
     host.insertBefore(bar, host.firstChild);
   }
 

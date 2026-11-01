@@ -100,6 +100,10 @@ const EMPTY_ICON = {
   list: 'M4.2 4.6h6.3V19.6H4.2zM13.5 4.6h6.3V19.6h-6.3z',
 };
 
+/* 空态：标题与说明是**纯文本**（来自代码里的字面量），按默认转义；
+ * actions 是**按钮 HTML**，按原样插入 —— 3.3.1 之前它被当场文本转义，
+ * 页面上直接看到 `<a class="x-btn …">` 源码（追踪 / 变化监测 / 检测记录三页）。
+ * 约定：desc 只放文字，要放链接请用 actions。 */
 export function emptyState(opts) {
   const o = opts || {};
   return html`
@@ -108,7 +112,7 @@ export function emptyState(opts) {
         <path d="${EMPTY_ICON[o.icon] || EMPTY_ICON.doc}"/></svg>
       <div class="e-title">${o.title || '这里还没有内容'}</div>
       ${o.desc ? html`<div class="e-desc">${o.desc}</div>` : null}
-      ${o.actions ? html`<div class="x-empty-act">${o.actions}</div>` : null}
+      ${o.actions ? html`<div class="x-empty-act">${raw(o.actions)}</div>` : null}
     </div>`;
 }
 
@@ -206,8 +210,15 @@ export function spark(values, opts = {}) {
  * 三层结构：面包屑 → 标题 + 副标题 → 右侧动作。
  * @param {string} title 标题
  * @param {string} sub   一句话说明（可选）
- * @param {*} right      右侧动作（可选）
+ * @param {*} right      右侧动作（可选）。**约定为已拼好的 HTML 片段**（按钮等），
+ *                       本函数按原样插入，不转义；拼进去的动态内容必须调用方自己 esc()。
  * @param {Array} crumbs 面包屑：[['标签', '#/链接'], ['当前页']]（可选；最后一项不带链接）
+ *
+ * 🔴 3.3.1 修的坑：`right` 以前是普通插值 → 被 html`` 转义成
+ *    `&lt;button id="clMark"&gt;`，页面上直接看到一串源码；
+ *    紧接着 `$('#clMark').onclick = ...` 拿到 null 抛 TypeError，
+ *    路由把整页换成「页面加载出错」——**更新日志、资料库两页整页打不开**。
+ *    所以这里对 right 用 raw()：它是我们自己拼的按钮，不是用户输入。
  */
 export function pageHead(title, sub, right, crumbs) {
   return html`
@@ -221,7 +232,7 @@ export function pageHead(title, sub, right, crumbs) {
       <div class="x-page-head-row">
         <h1>${title}</h1>
         ${sub ? html`<span class="sub">${sub}</span>` : null}
-        ${right ? html`<div class="right">${right}</div>` : null}
+        ${right ? html`<div class="right">${raw(right)}</div>` : null}
       </div>
     </div>`;
 }
