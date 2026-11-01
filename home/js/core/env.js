@@ -19,6 +19,26 @@
      不是 JSON。那种情况下必须**显式**切到演示态并挂牌，不能静默给一份看起来像
      实时核验的结论 —— 这个产品最不能干的就是让人分不清"核过了"和"没核过"。 */
   export const RUNTIME = { demo: null };
+  /* 后端是否存在：只探一次，之后所有 /api/ 请求复用这个结论。
+     ⚠ 为什么不是"看这个请求本身失败没"：AppWrite 边缘对不存在的路径返回的是
+       **JSON 404**（{"type":"general_route_not_found"}），和真实 FastAPI 的
+       {"detail":"Not Found"} 长得一样 —— 按"响应不是 JSON 就算没后端"判**会漏判**，
+       实测托管站上 /api/v2/query 正是 application/json 的 404。
+     所以用一个**形状已知**的接口做探针：/api/v1/ext/status 正常时必有 state 字段。 */
+  let _backendProbe = null;
+  export function backendReady() {
+    if (RUNTIME.demo !== null) return Promise.resolve(RUNTIME.demo);
+    if (_backendProbe) return _backendProbe;
+    _backendProbe = _fetch(ORIGIN_BASE + '/api/v1/ext/status', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json().catch(() => null) : null))
+      .then((d) => {
+        RUNTIME.demo = !(d && typeof d.state === 'string');
+        if (RUNTIME.demo) showHostedDemoNotice();
+        return RUNTIME.demo;
+      })
+      .catch(() => { RUNTIME.demo = true; showHostedDemoNotice(); return true; });
+    return _backendProbe;
+  }
   function enterHostedDemo(path, init) {
     RUNTIME.demo = true;
     showHostedDemoNotice();
@@ -73,21 +93,12 @@
       if (IS_LOCAL && input.indexOf('/api/v2/query') === 0) {
         return offlineQueryResponse(init && init.body);
       }
-      /* 托管站：先按真实后端发一次。只有"失败且响应不是 JSON"才认定这个域名下没有后端
-         （静态服务器给的是 HTML 404 页）。后端在、只是这个请求出错时必须原样返回，
-         否则会把"接口报错"错判成"没有后端"，那时给出的离线结论就是假的。
-         ⚠ 只对 /api/ 前缀做这个判定：静态资源 404 不该把整个应用推进演示态。 */
+      /* 托管站判定见 backendReady()：用已知形状的接口探一次，别靠"这个请求失败没"。
+         判定之前先等探针结果，避免首屏那几个请求各判一次、出现前后不一致。 */
       if (!IS_LOCAL) {
-        const isApi = input.indexOf('/api/') === 0;
-        if (!isApi) { input = ORIGIN_BASE + input; return _fetch(input, init); }
-        // 已经判定过没有后端：不再每个请求都去打一次网络
-        if (RUNTIME.demo === true) return enterHostedDemo(input, init);
-        return _fetch(ORIGIN_BASE + input, init).then((r) => {
-          if (r.ok) { RUNTIME.demo = false; return r; }
-          const ct = (r.headers.get('content-type') || '').toLowerCase();
-          if (ct.indexOf('application/json') >= 0) { RUNTIME.demo = false; return r; }
-          return enterHostedDemo(input, init);
-        }, () => enterHostedDemo(input, init));
+        if (input.indexOf('/api/') !== 0) { input = ORIGIN_BASE + input; return _fetch(input, init); }
+        return backendReady().then((demo) => (
+          demo ? enterHostedDemo(input, init) : _fetch(ORIGIN_BASE + input, init)));
       }
       input = ORIGIN_BASE + input;        // 其余 -> file:///api/...（会失败，但错误可读）
     }
@@ -174,7 +185,11 @@
   }
   export async function pollBackend() {
     const el = $('#pillBackend');
-    try { await fetch('/api/v1/ext/status', { cache: 'no-store' });
+    /* ⚠ fetch 对 4xx/5xx **不会 reject** —— 原来只看"有没有抛异常"，
+       所以后端明明返回 503 也照样显示"后端在线"。演示态下这条会自相矛盾
+       （横幅说没有后端，胶囊说在线），必须按 r.ok 判。 */
+    try { const r = await fetch('/api/v1/ext/status', { cache: 'no-store' });
+      if (!r.ok) throw new Error('http ' + r.status);
       el.innerHTML = '<span class="x-dot live"></span>后端在线'; el.style.color = 'var(--x-ok)';
     } catch (e) { el.innerHTML = '<span class="x-dot dead"></span>后端离线'; el.style.color = 'var(--x-bad)'; }
   }
