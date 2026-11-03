@@ -175,7 +175,19 @@ import { doProfile } from '../core/actions.js';
       discHtml = `<div class="x-note" style="margin:10px 0">
         交易所披露：${esc(dc.note || '不可用')}。诉讼与团队两维因此无法从公告核对。</div>`;
     }
+    /* 托管版给的是**离线快照**（云端没有 Node 评分引擎，见 cloud_entry.py 的说明）。
+       必须顶在 KPI 上方说清楚：下面是"某一刻算出来的"，不是实时行情。
+       少这一句，用户会把三天前的评分当今天的结论。 */
+    const snap = inv.snapshot || null;
+    const snapHtml = (snap && snap.mode === 'snapshot') ? `
+      <div class="x-note" style="margin-bottom:10px;border-left-color:var(--x-warn, #d97706)">
+        <b>这是一份离线快照，不是实时评分</b>：由本机同一份评分代码在
+        <b>${esc(snap.generated_at || '—')}</b> 跑好存下来，行情与公告会变，结论也会跟着变。
+        看实时结论请用本机版。${snap.snapshot_name && snap.snapshot_name !== (r.query || {}).name
+          ? `（本次按「${esc(snap.snapshot_name)}」取的快照）` : ''}
+      </div>` : '';
     return `
+      ${snapHtml}
       <div class="x-kpis" style="margin-bottom:10px">
         <div class="x-kpi"><div class="k">投资结论</div><div class="v ${col}">${esc(v.label || '—')}</div></div>
         <div class="x-kpi"><div class="k">综合评分</div><div class="v x-info">${r.score == null ? '—' : esc(r.score)}</div></div>

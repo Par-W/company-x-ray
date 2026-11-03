@@ -1,6 +1,6 @@
 /* actions.js · 业务动作（查询 / 追踪 / 档案 / AI / 设置） */
 
-import { esc, sk, state } from '../core/env.js';
+import { esc, sk, state, RUNTIME } from '../core/env.js';
 import { radar } from '../core/charts.js';
 import { recentPush } from '../core/store.js';
 import { renderMerged, secHtml, uniSeq } from '../components/result.js';
@@ -28,7 +28,11 @@ import { postJSON, TIMEOUT_CLOUD } from './api.js';
     recentPush(name);
     const invType = (document.getElementById('invType') || {}).value || 'listed';
     const typeLabel = invType === 'listed' ? '上市公司查询' : '未上市公司查询';
-    msg('正在查询…（可信度先出，投资评分要联网取行情/财报，通常 2–20 秒）');
+    /* 等待预期要按当前档位说：云端的耗时量级和本机完全不是一回事
+       （实测冷启动 18 秒、冷启动后首次查询 52 秒）。写死"2–20 秒"会让云端用户以为卡死。 */
+    msg(RUNTIME.mode === 'cloud'
+      ? '正在查询…（可信度先出；云端版要真去一手来源联网核验，冷启动时可能要 30–60 秒）'
+      : '正在查询…（可信度先出，投资评分要联网取行情/财报，通常 2–20 秒）');
     $('#verdictBox').innerHTML = sk(6);
 
     // 投资评分先发出去、不 await：它与本地可信度并行，不互相拖慢。
