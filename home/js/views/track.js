@@ -1,7 +1,7 @@
 /* views/track.js · 追踪与变化监测 */
 
 import { AI_DONE, esc, sk, state } from '../core/env.js';
-import { bigChartHtml, renderBigChart } from '../core/charts.js';
+import { bigChartHtml, loadChartLib, renderBigChart } from '../core/charts.js';
 import { SEV, timelineHtml } from '../components/panels.js';
 import { msg } from '../core/actions.js';
 import { pageHead, emptyState } from '../components/components.js';
@@ -119,10 +119,18 @@ import { pageHead, emptyState } from '../components/components.js';
       <p class="x-muted" style="font-size:12px;margin-top:10px">${esc(d.note || '')}</p>
       ${baseHtml}`;
 
-    // 画大图（Chart.js；若库没加载成功则退回文本时间线，不让页面空白）
+    // 画大图：Chart.js 按需加载（首次进本页才去拉，不占首屏）。
+    // 原来 index.html 从没加载过 Chart，这里每次都静默降级成文本时间线 —— 图一次都没画出来过。
     if (!renderBigChart(d)) {
-      const box3 = document.getElementById('chgChart');
-      if (box3 && box3.parentElement) box3.parentElement.innerHTML = timelineHtml(d.timeline);
+      loadChartLib().then((has) => {
+        if (has && renderBigChart(d)) return;
+        const box3 = document.getElementById('chgChart');
+        if (box3 && box3.parentElement) box3.parentElement.innerHTML = timelineHtml(d.timeline);
+        else {
+          const span = document.getElementById('chgSpan');
+          if (span) span.textContent = '图表库没加载成功，已退回文本时间线（不影响其它功能）。';
+        }
+      });
     }
 
     // 基线里的 AI 整理（只整理已收集的事实，不参与判级）；同一次会话内同一家企业只跑一次

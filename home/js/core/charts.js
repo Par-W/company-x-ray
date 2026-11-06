@@ -42,8 +42,33 @@ import { esc } from '../core/env.js';
       <text x="${W - pad}" y="${H - 6}" font-size="11" fill="var(--x-dot)" text-anchor="end">最近</text>
       <text x="${pad}" y="16" font-size="11" fill="var(--x-muted)">峰值 ${esc(max.toLocaleString('zh-CN'))}｜谷值 ${esc(min.toLocaleString('zh-CN'))}</text></svg>`;
   }
+  /* ---------- Chart.js 按需加载（3.3.3）----------
+   * 原来 index.html 从来没加载过 chart.umd.min.js，于是 renderBigChart() 里
+   * `typeof Chart === 'undefined'` 恒真 → 每次都退回文本时间线，大图**一次都没画出来过**，
+   * 但页面有优雅降级，所以谁都不报错（第七类安静失败）。
+   *
+   * 修法不是往 index.html 里塞一个 208KB 的 <script>：那是首屏成本，
+   * 而这张图只在「追踪 → 变化时间线」用到，且云端版根本不提供追踪。
+   * 改成真要看图时才拉，拉不到再降级成文本。
+   */
+  let _chartLoading = null;
+  export function loadChartLib() {
+    if (typeof Chart !== 'undefined') return Promise.resolve(true);
+    if (_chartLoading) return _chartLoading;
+    _chartLoading = new Promise((resolve) => {
+      try {
+        const s = document.createElement('script');
+        s.src = '../assets/chart.umd.min.js';
+        s.async = true;
+        s.onload = () => resolve(typeof Chart !== 'undefined');
+        s.onerror = () => resolve(false);
+        (document.head || document.body).appendChild(s);
+      } catch (e) { resolve(false); }
+    });
+    return _chartLoading;
+  }
+
   export function bigChartHtml(h) {
-    const base = (h && h.baseline) || null;
     const checks = (h && h.timeline) || [];
     const note = (checks.length < 2)
       ? '<p class="x-muted" style="font-size:12px">目前只有 1 次核验，所以图上只有一个点 —— 这是正常的：'
