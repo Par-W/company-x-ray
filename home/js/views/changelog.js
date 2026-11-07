@@ -58,6 +58,10 @@ import { pageHead } from '../components/components.js';
             最近 ${Math.min((d.commits || []).length, 60)} 条提交（点开/收起）</summary>
             <div class="x-log" style="margin-top:10px">${cm}</div>
           </details>
+          <p class="x-muted" style="margin:var(--x-s3) 0 0;font-size:var(--x-fs-small);line-height:1.7">
+            代码与文档在 <a href="https://gitee.com/laj37/financial-fraud-prevention/tree/V2准线" target="_blank" rel="noopener">Gitee 仓库（V2准线 分支）↗</a>。
+            仓库首页的默认分支仍是早期的 p1，请从这个链接进入。
+          </p>
         </div></div>`;
 
     $('#clMark').onclick = () => {
