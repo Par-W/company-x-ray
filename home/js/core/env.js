@@ -15,8 +15,9 @@
   export const ORIGIN_BASE = IS_LOCAL ? '' : location.origin;
   export const _fetch = window.fetch.bind(window);
   /* 运行态：null=还没判定。三档，按能力从强到弱：
-       'local' —— 本机后端（全功能）
-       'cloud' —— 云端只读后端（AppWrite Function，能联网核验，但无 Node 引擎、无持久磁盘）
+       'local' —— 本机后端（完整后端 + 实时 Node 引擎 + 本机磁盘）
+       'cloud' —— 云端完整后端（AppWrite Function：同一个 FastAPI app，联网核验是真的，
+                  名单/追踪/收藏/设置写进云端状态并按浏览器隔离；评分与人员给离线快照）
        'demo'  —— 只有界面 + 打包时的离线快照
      为什么要分三档而不是"有/没有后端"：三者的能力边界差别很大，
      而用户最需要知道的是"我现在看到的东西是哪一档算出来的"。
@@ -27,6 +28,30 @@
     fn: 'xray-api',
   };
   export const RUNTIME = { mode: null, demo: null };
+
+  /* 云端访客标识：随机生成、只存在这个浏览器里，不是登录态。
+     后端按它把「收藏 / 追踪 / 名单 / 设置 / 核验历史」分开存，
+     所以两个人打开同一个网址不会互相看到对方的名单。
+     ⚠ 不要用 IP / UA 拼：同一办公室、同一浏览器升级都会串号。 */
+  export const VISITOR_ID = (() => {
+    const KEY = 'xray-cloud-visitor';
+    try {
+      let v = localStorage.getItem(KEY);
+      if (!v) {
+        v = 'v_' + (window.crypto && crypto.randomUUID
+          ? crypto.randomUUID().replace(/-/g, '')
+          : Math.random().toString(36).slice(2) + Date.now().toString(36));
+        localStorage.setItem(KEY, v);
+      }
+      return v;
+    } catch (e) {
+      return 'v_nostorage';            // 隐私模式等：落到公共分区，功能仍可用
+    }
+  })();
+  /* 两条都发：header 给函数读；path 上的 __v 是给「AppWrite 没透传自定义头」的兜底，
+     入口会把 __v 从 query 里摘掉再交给 FastAPI，业务路由看不到它。 */
+  const withVisitor = (path) => path + (path.indexOf('?') >= 0 ? '&' : '?')
+    + '__v=' + encodeURIComponent(VISITOR_ID);
   /* 判定顺序：本机后端 → 云端函数 → 离线快照。
      ⚠ 为什么不用"看这个请求本身失败没"：AppWrite 边缘对不存在的路径返回的是
        **JSON 404**（{"type":"general_route_not_found"}），和真实 FastAPI 的
@@ -64,7 +89,7 @@
         RUNTIME.mode = mode;
         RUNTIME.demo = (mode === 'demo');
         if (mode === 'demo') showHostedDemoNotice();
-        else if (mode === 'cloud') showCloudNotice();
+        else if (mode === 'cloud') { showCloudNotice(); wireCloudNav(); }
         return mode;
       });
     return _modeProbe;
@@ -83,8 +108,8 @@
       signal: init && init.signal,
       headers: { 'Content-Type': 'application/json', 'X-Appwrite-Project': CLOUD.project },
       body: JSON.stringify({
-        body: body, method: method, path: path,
-        headers: { 'content-type': 'application/json' },
+        body: body, method: method, path: withVisitor(path),
+        headers: { 'content-type': 'application/json', 'x-xray-visitor': VISITOR_ID },
       }),
     }).then((r) => r.json()).then((d) => {
       const status = Number(d.responseStatusCode || 200);
@@ -183,9 +208,10 @@
     if (el && el.parentNode) el.parentNode.removeChild(el);
   }
 
-  /* 云端只读版横幅。与"离线快照版"必须写得不一样 ——
-     前者是**真的联网核验**，后者只是打包时的旧快照；
-     两句话都挂同一条文案，等于把两者混为一谈。 */
+  /* 云端完整版横幅。与"离线快照版"必须写得不一样 ——
+     前者是**真的联网核验 + 真的后端**，后者只是打包时的旧快照。
+     3.4.0 起云端不再只读：名单/追踪/收藏/设置/核验历史都能写，
+     只有「实时投资评分 / 实时人员透视」是离线快照、「第三方密钥」刻意不收。 */
   export function showCloudNotice() {
     if (document.getElementById('xrayCloudNotice') ||
         document.getElementById('xrayDemoNotice')) return;
@@ -196,16 +222,39 @@
     bar.style.cssText = 'position:sticky;top:0;z-index:99999;padding:10px 14px;'
       + 'background:var(--x-sev-bg-warn);border-bottom:1px solid var(--x-line);color:var(--x-ink);'
       + 'font:13px/1.7 system-ui,-apple-system,sans-serif';
-    bar.innerHTML = '<b>云端只读版</b>：核验由云端引擎完成，<b>联网查证是真的</b>'
-      + '（巨潮、东方财富、交易所等一手来源）。'
+    bar.innerHTML = '<b>云端完整版</b>：这里跑的是<b>和本机同一份后端</b>，'
+      + '<b>联网查证是真的</b>（巨潮、东方财富、交易所等一手来源）；'
+      + '名单管理、变化追踪、收藏、告警、核验历史都能保存，'
+      + '数据按当前浏览器隔离，不会串到别人那里。'
       + '<b>热起来几秒出结果；隔久了第一次要冷启动</b>（实测 18 秒探活、52 秒首次查询）——'
       + '这段时间页面会一直显示"正在查询"，不是卡死。'
-      + '<b>人员透视、名单编辑、追踪、AI 设置只在「本机版」（桌面客户端）提供</b>'
-      + '（依赖本机 Node 引擎与可持久写入的磁盘）；<b>投资评分给的是离线快照</b>'
-      + '（生成时间写在评分卡里），不是实时评分。'
-      + '本页点不可用的功能会明确说明"托管版不提供"，那是能力边界，<b>不是站点坏了</b>。'
-      + '<br>要看那几项：用本机版（项目根双击 <code>启动并打开首页.bat</code>）。';
+      + '<b>投资评分与人员透视给的是离线快照</b>（同一份代码预先算好，生成时间写在结果里），'
+      + '不是实时评分；<b>第三方 API 密钥与群机器人 Webhook 托管版不接收</b>，'
+      + '这类凭据只应填在本机版设置里。'
+      + '<br>要实时评分 / 实时人员透视 / 配置自己的密钥：用本机版'
+      + '（项目根双击 <code>启动并打开首页.bat</code>）。';
     host.insertBefore(bar, host.firstChild);
+  }
+
+  /* 云端把「加分项」两个入口从本机 127.0.0.1 切到站内页面。
+     ⚠ 不能只在文案里说"云端不支持"：那两个 <a> 还指着用户自己的电脑，
+       点开就是"无法访问此网站"，比功能缺失更像站点坏了。 */
+  export function wireCloudNav() {
+    const map = [
+      ['http://127.0.0.1:3210/', '/apps/invest-score/'],
+      ['http://127.0.0.1:3211/', '/apps/company-xray/'],
+    ];
+    map.forEach(([from, to]) => {
+      const a = document.querySelector('a[href="' + from + '"]');
+      if (a) a.setAttribute('href', to);
+    });
+  }
+  /* 首页「完整报告」按钮：云端跳站内评分页，本机仍开 :3210。
+     参数名沿用评分页自己读的 q / type，写成 name 会打开一片空白。 */
+  export function investPageUrl(nm, ty) {
+    const qs = '?type=' + encodeURIComponent(ty)
+      + (nm ? '&q=' + encodeURIComponent(nm) : '');
+    return (RUNTIME.mode === 'cloud' ? '/apps/invest-score/' : 'http://127.0.0.1:3210/') + qs;
   }
 
   /* 托管演示态横幅：**常驻**，不自动消失。

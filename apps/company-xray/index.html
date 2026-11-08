@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="../cloud-bridge.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公司人员透视 · X光</title>
+<!-- 品牌图标：扫描取景框（scripts/make_icons.py 生成，favicon/客户端 exe/扩展图标同一套）-->
+<link rel="icon" href="../../../assets/favicon.ico" sizes="48x48">
+<link rel="icon" href="../../../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../../assets/apple-touch-icon.png">
+<style>
+/* 3.0.0：本页原本是第四套色板（米色底 + 靛紫 brand + 紫 accent）。
+   改为与 front/assets/theme.css 同源 —— 数值逐个对齐主站令牌，
+   变量名保持不变（页面里几十处引用，改名风险大）。
+   ⚠ 这套数值与 theme.css 必须一致，改一处要改两处。 */
+:root{
+  --bg:#f0f2f5; --card:#fff; --line:rgba(0,0,0,.14); --line2:rgba(0,0,0,.24);
+  --tx:#1f2937; --tx2:#5a6474; --tx3:#9ca3af;
+  --green:#0f7a54; --green-bg:#f0fdf4; --amber:#b45309; --amber-bg:#fffbeb; --amber-line:#b45309;
+  --red:#b42342; --red-bg:#fef2f2; --blue:#0d5fc8; --blue-bg:#eef4fd;
+  /* 深色模式用（浅色默认 = 现在的硬编码值） */
+  --soft-bg:#eef4fd; --soft-border:#b8d4f8; --brand:#0d5fc8; --accent:#4a90e2;
+}
+
+/* ---------- 深色模式（与主站「外观」设置联动，见 head 内脚本） ---------- */
+[data-theme="dark"]{
+  --bg:#0f1420; --card:#171d2b; --line:rgba(255,255,255,.13); --line2:rgba(255,255,255,.28);
+  --tx:#e6ebf5; --tx2:#94a3b8; --tx3:#64748b;
+  --green:#4fb98a; --green-bg:#142a1e; --amber:#c9a227; --amber-bg:#2b2416; --amber-line:#c9a227;
+  --red:#e08492; --red-bg:#2b1a21; --blue:#4a9eff; --blue-bg:#1a2130;
+  --soft-bg:#1f2735; --soft-border:#2f4a6b; --brand:#4a9eff; --accent:#7fb4f0;
+  color-scheme:dark;
+}
+[data-theme="dark"] .abtn:hover{background:var(--soft-bg);border-color:var(--soft-border);color:var(--brand)}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"PingFang SC","Microsoft YaHei",-apple-system,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;}
+.wrap{max-width:1020px;margin:0 auto;padding:36px 20px 60px;}
+header{margin-bottom:26px;}
+header h1{font-size:23px;font-weight:500;letter-spacing:.5px;}
+header p{font-size:13px;color:var(--tx2);margin-top:8px;line-height:1.7;}
+.srcRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+.srcChip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;border-radius:var(--x-r-sm);background:var(--card);border:.5px solid var(--line);}
+.srcChip i{width:7px;height:7px;border-radius:50%;background:var(--tx3);}
+.srcChip.ok i{background:var(--green);}
+.srcChip.no i{background:var(--amber-line);}
+.searchRow{display:flex;gap:10px;margin-bottom:8px;}
+.searchRow input{flex:1;height:46px;border:.5px solid var(--line2);border-radius:var(--x-r-sm);padding:0 16px;font-size:15px;outline:none;background:var(--card);}
+.searchRow input:focus{border-color:var(--blue);}
+.btn{height:46px;padding:0 26px;border-radius:var(--x-r-sm);font-size:14px;cursor:pointer;border:.5px solid var(--tx);background:var(--tx);color:var(--bg);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.hint{font-size:12px;color:var(--tx3);margin-bottom:20px;line-height:1.6;}
+#loading{display:none;text-align:center;padding:44px 0;}
+#loading .spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#loading p{font-size:13px;color:var(--tx2);}
+#result{display:none;}
+.card{background:var(--card);border:.5px solid var(--line);border-radius:var(--x-r-md);padding:20px 22px;margin-bottom:16px;}
+.card h3{font-size:14px;font-weight:500;margin-bottom:14px;}
+.card h3 .sub{font-size:11px;color:var(--tx3);font-weight:400;margin-left:8px;}
+.metaGrid{display:flex;gap:12px;flex-wrap:wrap;}
+.metaItem{background:var(--bg);border-radius:var(--x-r-sm);padding:10px 14px;min-width:150px;flex:1;}
+.metaItem .k{font-size:11px;color:var(--tx3);margin-bottom:3px;}
+.metaItem .v{font-size:13px;font-weight:500;word-break:break-all;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{padding:5px 8px;border-bottom:1px solid var(--line);color:var(--tx3);font-size:11px;font-weight:400;text-align:left;}
+td{padding:8px;border-bottom:.5px dashed var(--line);vertical-align:top;}
+td.r{text-align:right;}
+td .nm{font-weight:500;}
+td .res{font-size:11px;color:var(--tx3);margin-top:2px;}
+.chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:var(--x-r-sm);margin-right:6px;margin-top:3px;}
+.chip.blue{background:var(--blue-bg);color:var(--blue);}
+.chip.amber{background:var(--amber-bg);color:var(--amber);}
+.chip.green{background:var(--green-bg);color:var(--green);}
+.chip.gray{background:var(--bg);color:var(--tx2);}
+/* [整合新增] AI 标注 + 每人「搜索人员事迹」按钮 */
+.aiBadge{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:6px;
+  background:var(--accent);color:#fff;letter-spacing:.5px;vertical-align:middle;}
+.acts{white-space:nowrap;}
+.abtn{display:inline-block;font-size:11.5px;padding:3px 8px;margin-right:5px;border-radius:var(--x-r-sm);
+  border:1px solid var(--line,#e2e8f0);background:var(--card);color:var(--tx2);text-decoration:none;}
+.abtn:hover{background:var(--soft-bg);border-color:var(--soft-border);color:var(--brand);text-decoration:none;}
+.resume{font-size:12px;color:var(--tx2);margin-top:5px;line-height:1.6;}
+.chan{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 10px;border-radius:var(--x-r-sm);background:var(--bg);margin:0 8px 8px 0;}
+.chan i{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.chan.ok i{background:var(--green);} .chan.plan i{background:var(--amber-line);} .chan.failed i,.chan.empty i,.chan.auth i{background:var(--tx3);}
+.chan span{color:var(--tx2);}
+.note{font-size:12px;color:var(--tx2);line-height:1.7;padding:6px 0;border-bottom:.5px dashed var(--line);}
+.note:last-child{border-bottom:none;}
+.empty{font-size:13px;color:var(--tx3);padding:8px 0;}
+.disclaim{margin-top:26px;padding-top:16px;border-top:.5px solid var(--line);font-size:11px;color:var(--tx3);line-height:1.8;}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:var(--x-r-sm);margin-left:8px;vertical-align:2px;}
+.badge.top{background:var(--amber-bg);color:var(--amber);}
+</style>
+<script>
+/* 主题联动：与主站共享 localStorage['xray.theme']（'light'|'dark'|'system'）。
+   本页是同源 iframe/子页，主站切换主题时这里会收到 storage 事件并实时跟随。 */
+(function () {
+  function apply() {
+    var v = 'system';
+    try { v = localStorage.getItem('xray.theme') || 'system'; } catch (e) {}
+    var dark = (v === 'dark') ||
+      (v === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.setAttribute('data-theme', 'light'); /* 显式 light：防系统深色时原生控件被渲染成深色 */
+  }
+  apply();
+  try {
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    var h = function () { apply(); };
+    if (mq.addEventListener) mq.addEventListener('change', h);
+    else if (mq.addListener) mq.addListener(h);
+    window.addEventListener('storage', function (e) { if (!e || !e.key || e.key === 'xray.theme') apply(); });
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>公司人员透视 · X光</h1>
+    <p>输入任意公司名称（科技、食品、娱乐……不限行业），聚合展示：法定代表人、董事长、实际控制人、大股东构成与董监高核心团队——含职务、任期、持股、简历。</p>
+    <div class="srcRow" id="srcRow">
+      <span class="srcChip" data-src="qcc"><i></i>企查查 MCP</span>
+      <span class="srcChip" data-src="shuidi"><i></i>水滴信用 MCP</span>
+      <span class="srcChip" data-src="tyc"><i></i>天眼查 MCP</span>
+      <span class="srcChip ok" data-src="fallback"><i></i>公开数据兜底（东财F10 / 公开索引）</span>
+    </div>
+  </header>
+
+  <div class="searchRow">
+    <input id="fCompany" placeholder="输入公司名称（全称或简称），如：贵州茅台酒股份有限公司 / 腾讯 / 海天味业" autocomplete="off" onkeydown="if(event.key==='Enter')go()">
+    <button class="btn" id="btnGo" onclick="go()">透视查询</button>
+  </div>
+  <div class="hint">支持全称或简称；三个 MCP 源按会员权益可用性自动降级，未配置 Token 时使用公开数据兜底（A股覆盖最全）。数据聚合自企查查 / 水滴信用 / 天眼查 / 东方财富公开接口。</div>
+
+  <div id="loading"><div class="spinner"></div><p>正在穿透三源核查……</p><div class="hint" id="loadStep"></div></div>
+  <div id="result"></div>
+
+  <div class="disclaim">
+    数据来源：企查查 / 水滴信用 / 天眼查 MCP 接口（按 Token 配置可用）、东方财富公开接口、必应公开检索快照。持股比例均为「一层直接持股」口径，按数据源原样展示，不做过穿透推算；实际控制人引用专门接口返回值。信息可能存在滞后，请以国家企业信用信息公示系统及官方渠道为准。仅供学习研究参考。
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

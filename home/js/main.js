@@ -10,7 +10,7 @@
  * ========================================================================== */
 
 /* ---------- 全局工具（视图层沿用 $ 选择器写法，避免大规模改写） ---------- */
-import { esc, sk, state, debounce, IS_CLIENT, pollExt, pollBackend, showLocalNotice, hideLocalNotice } from './core/env.js';
+import { esc, sk, state, debounce, IS_CLIENT, pollExt, pollBackend, showLocalNotice, hideLocalNotice, investPageUrl } from './core/env.js';
 
 window.$ = (sel) => document.querySelector(sel);
 window.esc = esc;
@@ -90,12 +90,12 @@ const homeRoute = homeView({
     report: () => {
       const nm = currentQuery();
       const ty = (window.$('#invType') || {}).value || 'listed';
-      // ⚠ 投资评分是**独立 Node 服务**（后端 lifespan 自动拉起，端口 3210），
-      //   不是后端的静态目录 —— 写成 /stage/invest-score/ 会 404（那是源码路径）。
+      // ⚠ 本机：独立 Node 服务（后端 lifespan 自动拉起，端口 3210）；
+      //   云端：站内 /apps/invest-score/ 那份纯前端页，由 investPageUrl() 选路。
       //   参数名以评分页自己读的为准：qs.get('q') 与 qs.get('type')。
       //   用 name 的话页面能开但不会自动查询 = 又回到「点过去一片空白」的老坑。
-      window.open('http://127.0.0.1:3210/?type=' + ty
-        + (nm ? '&q=' + encodeURIComponent(nm) : ''), '_blank');
+      //   /stage/invest-score/ 是源码路径，写成它必定 404。
+      window.open(investPageUrl(nm, ty), '_blank');
     },
     onQueryChange: (v) => {
       window.$('#q').value = v;
