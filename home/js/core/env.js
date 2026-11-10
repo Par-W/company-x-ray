@@ -14,19 +14,34 @@
   export const IS_LOCAL = location.protocol === 'file:';
   export const ORIGIN_BASE = IS_LOCAL ? '' : location.origin;
   export const _fetch = window.fetch.bind(window);
-  /* 运行态：null=还没判定。三档，按能力从强到弱：
+  /* 运行态：null=还没判定。按能力从强到弱：
        'local' —— 本机后端（完整后端 + 实时 Node 引擎 + 本机磁盘）
-       'cloud' —— 云端完整后端（AppWrite Function：同一个 FastAPI app，联网核验是真的，
-                  名单/追踪/收藏/设置写进云端状态并按浏览器隔离；评分与人员给离线快照）
+       'cloud' —— 云端函数。3.4.1 起分两档，见 CLOUD_TIER：
+                   lite = 网页精简版（5 个只读核验能力点，不保存任何东西）
+                   full = 云端完整版（同一份 FastAPI app + Storage 状态 + 三份快照）
        'demo'  —— 只有界面 + 打包时的离线快照
-     为什么要分三档而不是"有/没有后端"：三者的能力边界差别很大，
+     为什么要分档而不是"有/没有后端"：能力边界差别很大，
      而用户最需要知道的是"我现在看到的东西是哪一档算出来的"。
      RUNTIME.demo 保留为「不是本机后端」的简写，兼容既有探针与文案判断。 */
   export const CLOUD = {
     endpoint: 'https://sgp.cloud.appwrite.io/v1',
     project: '6ae6a81d0010c6980d02',
-    fn: 'xray-api',
+    fnLite: 'xray-lite',      // 3.4.1 网页精简版：5 个能力点，不接 Storage、不带快照
+    fnFull: 'xray-api',       // 3.4.0 云端完整版：保留在线，随时可回退
   };
+  /* 两档并存，切换只改函数 ID —— 不用重新部署，也不动任何已存的数据。
+     默认 lite：网页版对外就是 5 个点。?full=1 / ?lite=1 显式改档并记住，
+     之后开新页面不用每次带参数；清掉浏览器数据会回到默认精简版。
+     ⚠ 精简 ≠ 离线：lite 档仍然请求真后端，只是不保存、不算快照。 */
+  export const CLOUD_TIER = (() => {
+    try {
+      const q = new URLSearchParams(location.search || '');
+      if (q.get('full') === '1') { localStorage.setItem('xray.cloudTier', 'full'); return 'full'; }
+      if (q.get('lite') === '1') { localStorage.setItem('xray.cloudTier', 'lite'); return 'lite'; }
+      return localStorage.getItem('xray.cloudTier') === 'full' ? 'full' : 'lite';
+    } catch (e) { return 'lite'; }
+  })();
+  CLOUD.fn = CLOUD_TIER === 'full' ? CLOUD.fnFull : CLOUD.fnLite;
   export const RUNTIME = { mode: null, demo: null };
 
   /* 云端访客标识：随机生成、只存在这个浏览器里，不是登录态。
@@ -208,10 +223,10 @@
     if (el && el.parentNode) el.parentNode.removeChild(el);
   }
 
-  /* 云端完整版横幅。与"离线快照版"必须写得不一样 ——
-     前者是**真的联网核验 + 真的后端**，后者只是打包时的旧快照。
-     3.4.0 起云端不再只读：名单/追踪/收藏/设置/核验历史都能写，
-     只有「实时投资评分 / 实时人员透视」是离线快照、「第三方密钥」刻意不收。 */
+  /* 云端横幅：3.4.1 起按档位给**两套不同**的措辞。
+     挂同一个 id 是为了不让两档横幅叠在一起；但文案绝不能共用 ——
+     精简版说"能保存"、或完整版说"只有 5 个点"，都是当面说假话。
+     与「静态演示版」也必须写得不一样：后者根本没有后端。 */
   export function showCloudNotice() {
     if (document.getElementById('xrayCloudNotice') ||
         document.getElementById('xrayDemoNotice')) return;
@@ -222,23 +237,40 @@
     bar.style.cssText = 'position:sticky;top:0;z-index:99999;padding:10px 14px;'
       + 'background:var(--x-sev-bg-warn);border-bottom:1px solid var(--x-line);color:var(--x-ink);'
       + 'font:13px/1.7 system-ui,-apple-system,sans-serif';
-    bar.innerHTML = '<b>云端完整版</b>：这里跑的是<b>和本机同一份后端</b>，'
-      + '<b>联网查证是真的</b>（巨潮、东方财富、交易所等一手来源）；'
-      + '名单管理、变化追踪、收藏、告警、核验历史都能保存，'
-      + '数据按当前浏览器隔离，不会串到别人那里。'
-      + '<b>热起来几秒出结果；隔久了第一次要冷启动</b>（实测 18 秒探活、52 秒首次查询）——'
-      + '这段时间页面会一直显示"正在查询"，不是卡死。'
-      + '<b>投资评分与人员透视给的是离线快照</b>（同一份代码预先算好，生成时间写在结果里），'
-      + '不是实时评分；<b>第三方 API 密钥与群机器人 Webhook 托管版不接收</b>，'
-      + '这类凭据只应填在本机版设置里。'
-      + '<br>要实时评分 / 实时人员透视 / 配置自己的密钥：用本机版'
-      + '（项目根双击 <code>启动并打开首页.bat</code>）。';
+    if (CLOUD_TIER === 'lite') {
+      bar.innerHTML = '<b>网页精简版</b>：这一版只开放 <b>5 项只读核验</b>'
+        + '（统一查询、六锚点核验与判级、企业档案与品牌、资金往来比对、库内名单与资料库）。'
+        + '<b>不是离线演示</b>：跑的是真后端，按你输入的公司名当场查事实库、现算结论，'
+        + '六锚点里的 ICP 备案主体仍是<b>联网实时反查</b>。'
+        + '<b>不保存任何东西</b>：名单编辑、变化追踪、收藏、告警、AI 设置，'
+        + '以及投资评分 / 人员透视（那两项在完整版里本来也是离线快照）都不在这一版。'
+        + '要这些能力，在网址后加 <code>?full=1</code> 切到<b>云端完整版</b>，或用桌面客户端。'
+        + '<br><b>热起来几秒出结果；隔久了第一次要冷启动</b>（实测 18 秒探活、52 秒首次查询）——'
+        + '这段时间页面会一直显示"正在查询"，不是卡死。'
+        + '<b>查无记录 ≠ 有问题</b>，只代表不在这份已复核事实库里。';
+    } else {
+      bar.innerHTML = '<b>云端完整版</b>：这里跑的是<b>和本机同一份后端</b>，'
+        + '<b>联网查证是真的</b>（巨潮、东方财富、交易所等一手来源）；'
+        + '名单管理、变化追踪、收藏、告警、核验历史都能保存，'
+        + '数据按当前浏览器隔离，不会串到别人那里。'
+        + '<b>热起来几秒出结果；隔久了第一次要冷启动</b>（实测 18 秒探活、52 秒首次查询）——'
+        + '这段时间页面会一直显示"正在查询"，不是卡死。'
+        + '<b>投资评分与人员透视给的是离线快照</b>（同一份代码预先算好，生成时间写在结果里），'
+        + '不是实时评分；<b>第三方 API 密钥与群机器人 Webhook 托管版不接收</b>，'
+        + '这类凭据只应填在本机版设置里。'
+        + '<br>要实时评分 / 实时人员透视 / 配置自己的密钥：用本机版'
+        + '（项目根双击 <code>启动并打开首页.bat</code>）。'
+        + '<br>当前是 <code>?full=1</code> 完整档；去掉参数或访问 <code>?lite=1</code> 回到网页精简版。';
+    }
     host.insertBefore(bar, host.firstChild);
   }
 
   /* 云端把「加分项」两个入口从本机 127.0.0.1 切到站内页面。
      ⚠ 不能只在文案里说"云端不支持"：那两个 <a> 还指着用户自己的电脑，
-       点开就是"无法访问此网站"，比功能缺失更像站点坏了。 */
+       点开就是"无法访问此网站"，比功能缺失更像站点坏了。
+     3.4.1 精简版不提供这两页（它们依赖离线快照，而 lite 档刻意不带），
+     所以这一档直接把入口收起来，由横幅说明怎么切到完整版 —— 留着能点却必 501，
+     属于让人以为站点坏了。 */
   export function wireCloudNav() {
     const map = [
       ['http://127.0.0.1:3210/', '/apps/invest-score/'],
@@ -246,7 +278,13 @@
     ];
     map.forEach(([from, to]) => {
       const a = document.querySelector('a[href="' + from + '"]');
-      if (a) a.setAttribute('href', to);
+      if (!a) return;
+      if (CLOUD_TIER === 'lite') {
+        a.classList.add('off');
+        a.setAttribute('title', '网页精简版不含这两页；在网址后加 ?full=1 切到完整版');
+      } else {
+        a.setAttribute('href', to);
+      }
     });
   }
   /* 首页「完整报告」按钮：云端跳站内评分页，本机仍开 :3210。
