@@ -224,7 +224,7 @@ header p{font-size:13px;color:var(--tx2);margin-top:6px;line-height:1.6;}
 <div class="wrap">
   <header>
     <h1>公司投资评分 · X光透视</h1>
-    <p>十维加权评分（行业 / 团队 / 技术 / 产品 / 成本 / 管理 / 客户 / 品牌 / 财务安全 / 诉讼风险），联网聚合财务数据与公开报道，输出三档投资结论。上市公司与未上市公司采用不同权重口径。</p>
+    <p>维度加权评分：本机版按十维（行业 / 团队 / 技术 / 产品 / 成本 / 管理 / 客户 / 品牌 / 财务安全 / 诉讼风险），网页版按五维（财务安全 / 产品力 / 行业前景 / 团队实力 / 诉讼风险）。联网聚合财务数据与公开报道，输出三档投资结论；上市公司与未上市公司采用不同权重口径。</p>
   </header>
 
   <div id="home">
@@ -327,7 +327,7 @@ header p{font-size:13px;color:var(--tx2);margin-top:6px;line-height:1.6;}
 <script>
 var curType = 'listed';
 var stepTimer = null;
-var steps = ['匹配工商与行情数据源','抓取财务三表与现价','爱企查/企查查公开索引核验','检索公开报道与诉讼线索','十维加权评分与精英核查'];
+var steps = ['匹配工商与行情数据源','抓取财务三表与现价','爱企查/企查查公开索引核验','检索公开报道与诉讼线索','维度加权评分与精英核查'];
 
 function openModal(type){
   curType = type;
@@ -636,7 +636,8 @@ function render(r){
 
   html += renderRegistryCard(r);
 
-  html += '<div class="card"><h3>十维评分明细' + (r.dimScore!=null && r.stockScore!=null ? '（上市公司口径：十维折算 80% + 股票评估 20%）' : '（权重因上市/未上市而不同）') + '</h3>';
+  var dw = (r.dimCount===5 || (r.breakdown && r.breakdown.length===5)) ? '五维' : '十维';
+  html += '<div class="card"><h3>' + dw + '评分明细' + (r.dimScore!=null && r.stockScore!=null ? '（上市公司口径：' + dw + '折算 80% + 股票评估 20%）' : '（权重因上市/未上市而不同）') + '</h3>';
   for(var i=0;i<r.breakdown.length;i++){
     var b = r.breakdown[i];
     var none = (b.raw==null);
@@ -644,7 +645,7 @@ function render(r){
          +  '<div class="bar">'+(none?'':'<i style="width:'+Math.min(100,b.raw)+'%;background:'+barColor(b.raw)+'"></i>')+'</div>'
          +  '<span class="val">'+(none?'未评分':Math.round(b.raw))+'</span></div>';
   }
-  // 未评分的维度不参与加权，要说清楚"总分是在几维上算出来的"，否则读者会以为十维都算了
+  // 未评分的维度不参与加权，要说清楚"总分是在几维上算出来的"，否则读者会以为所有维度都算了
   var scoredCnt = 0, offNames = [];
   for(var i=0;i<r.breakdown.length;i++){
     if(r.breakdown[i].raw==null) offNames.push(r.breakdown[i].label); else scoredCnt++;
@@ -696,7 +697,7 @@ function render(r){
     var vc = sa.verdict ? sa.verdict.color : 'amber';
     var vLabel = sa.valuation==='low'?'低估':(sa.valuation==='fair'?'合理':(sa.valuation==='high'?'偏高':'未知'));
     var wNote = (r.stockScore!=null && r.dimScore!=null)
-      ? '本项占公司总分 <b>20%</b>（股票分 '+esc(r.stockScore)+' → 贡献 '+esc(r.stockWeighted)+' 分），十维折算占 80%（十维分 '+esc(r.dimScore)+'）'
+      ? '本项占公司总分 <b>20%</b>（股票分 '+esc(r.stockScore)+' → 贡献 '+esc(r.stockWeighted)+' 分），' + dw + '折算占 80%（' + dw + '分 '+esc(r.dimScore)+'）'
       : '';
     html += '<div class="card"><h3>股票投资评估（估值 × 财务质量知识规则）</h3>'
       + '<div class="banner ' + vc + '" style="margin-bottom:14px;padding:14px 18px;">'
@@ -781,8 +782,8 @@ function verdictText(level, r){
 
 // ---------------- 完整评估报告（细分版） ----------------
 // 设计原则：报告里的每个数字都要能被读者自己核对 ——
-//   ① 每维标出"有效权重"与"贡献分"，贡献分相加应等于十维加权平均；
-//   ② 计算链逐步列出（十维 → 折算 → 股票 20% → 精英加分 → 综合），最后给自洽校验；
+//   ① 每维标出"有效权重"与"贡献分"，贡献分相加应等于维度加权平均；
+//   ② 计算链逐步列出（维度分 → 折算 → 股票 20% → 精英加分 → 综合），最后给自洽校验；
 //   ③ 每维标出分数出处（财报计算 / 演示样本 / 新闻修正 / 缺省中性），查不到就写查不到。
 
 function rpTime(iso){

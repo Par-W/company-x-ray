@@ -58,11 +58,13 @@
     var target = MAP[clean];
     if (!target) return raw(input, init);
 
-    if (TIER === 'lite') {
+    // 3.6.0 精简版恢复投资评分（五维离线快照），所以 api/analyze / api/config
+    // 继续往下走函数执行；只有人员透视两项仍明确不提供。
+    if (TIER === 'lite' && (clean === 'api/personnel' || clean === 'api/profile')) {
       return Promise.resolve(new Response(JSON.stringify({
         ok: false, cloud: true, lite: true, code: 'not_in_lite',
-        note: '网页精简版不提供投资评分 / 人员透视：这一版只有 5 项只读核验，'
-          + '也不带离线快照。在网址后加 ?full=1 切到云端完整版，或用桌面客户端。'
+        note: '网页精简版不提供人员透视：这一版只有 5 项只读核验与五维投资评分的离线快照。'
+          + '在网址后加 ?full=1 切到云端完整版，或用桌面客户端。'
           + '这只说明能力边界，不代表目标公司有问题。'
       }), { status: 501, headers: { 'Content-Type': 'application/json' } }));
     }
@@ -97,9 +99,10 @@
       + 'background:#fff4d6;color:#5a4300;border-bottom:1px solid #d9b75c;'
       + 'font:13px/1.7 system-ui,-apple-system,sans-serif;text-align:center';
     if (TIER === 'lite') {
-      bar.innerHTML = '<b>网页精简版</b>：投资评分与人员透视<b>不在这一版的 5 个能力点里</b>，'
-        + '这一版也没有带离线快照。在网址后加 <code>?full=1</code> 切到云端完整版'
-        + '（那里给的是与本机同一份代码算好的离线快照，不是实时查询），或用桌面客户端。';
+      bar.innerHTML = '<b>网页精简版</b>：本页给的是<b>五维投资评分的离线快照</b>'
+        + '（财务安全 / 产品力 / 行业前景 / 团队实力 / 诉讼风险），不是实时查询；'
+        + '生成时间、逐维贡献与计算链都写在结果里，查不到主体不代表它有问题。'
+        + '<b>人员透视不在这一版</b>；在网址后加 <code>?full=1</code> 可切到完整版。';
     } else {
       bar.innerHTML = '<b>云端版</b>：本页数据来自<b>与本机同一份代码算好的离线快照</b>，'
         + '不是实时查询；生成时间与数据来源写在结果里，查不到主体不代表它有问题。'
