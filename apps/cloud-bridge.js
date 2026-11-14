@@ -63,7 +63,8 @@
     if (TIER === 'lite' && (clean === 'api/personnel' || clean === 'api/profile')) {
       return Promise.resolve(new Response(JSON.stringify({
         ok: false, cloud: true, lite: true, code: 'not_in_lite',
-        note: '网页精简版不提供人员透视：这一版只有 5 项只读核验与五维投资评分的离线快照。'
+        note: '网页精简版不提供人员透视：这一版只有 5 项只读核验与五维投资评分'
+          + '（默认联网现算，失败时回落五维投资评分的离线快照）。'
           + '在网址后加 ?full=1 切到云端完整版，或用桌面客户端。'
           + '这只说明能力边界，不代表目标公司有问题。'
       }), { status: 501, headers: { 'Content-Type': 'application/json' } }));
@@ -99,14 +100,19 @@
       + 'background:#fff4d6;color:#5a4300;border-bottom:1px solid #d9b75c;'
       + 'font:13px/1.7 system-ui,-apple-system,sans-serif;text-align:center';
     if (TIER === 'lite') {
-      bar.innerHTML = '<b>网页精简版</b>：本页给的是<b>五维投资评分的离线快照</b>'
-        + '（财务安全 / 产品力 / 行业前景 / 团队实力 / 诉讼风险），不是实时查询；'
-        + '生成时间、逐维贡献与计算链都写在结果里，查不到主体不代表它有问题。'
-        + '<b>人员透视不在这一版</b>；在网址后加 <code>?full=1</code> 可切到完整版。';
+      bar.innerHTML = '<b>网页精简版</b>：五维投资评分'
+        + '（财务安全 / 产品力 / 行业前景 / 团队实力 / 诉讼风险）'
+        + '<b>默认联网现算</b>：按公司名当场取行情、财报、交易所披露与公开报道，'
+        + '结果里写明取数时间与来源。若取数超时或失败，会明确标注本次是'
+        + '<b>五维投资评分的离线快照</b>、非实时，并给出生成时间 —— 不拿快照冒充实时。'
+        + '查不到主体不代表它有问题。<b>人员透视不在这一版</b>；'
+        + '在网址后加 <code>?full=1</code> 可切到完整版。';
     } else {
-      bar.innerHTML = '<b>云端版</b>：本页数据来自<b>与本机同一份代码算好的离线快照</b>，'
-        + '不是实时查询；生成时间与数据来源写在结果里，查不到主体不代表它有问题。'
-        + '要实时评分 / 实时人员透视请用本机版。';
+      bar.innerHTML = '<b>云端完整版</b>：五维投资评分<b>默认联网现算</b>，'
+        + '结果与本机同一份引擎代码算出，写明取数时间与来源；'
+        + '取数失败时回落五维投资评分的离线快照并明确标注、非实时。'
+        + '人员透视仍是离线快照；查不到主体不代表它有问题。'
+        + '要实时人员透视或配置自己的凭据请用本机版。';
     }
     (document.body || document.documentElement).insertBefore(bar,
       (document.body || document.documentElement).firstChild);

@@ -376,9 +376,29 @@ function submitQuery(){
     hideLoading();
     if(!d.ok){ alert(d.error||'分析失败'); showHome(); return; }
     render(d.result);
+    showModeBadge(d);
   }).catch(function(e){
     hideLoading(); alert('网络异常：'+e.message); showHome();
   });
+}
+
+/* 3.7.0：按响应里的 mode 在结果页顶部写明「本次是实时还是回落快照」。
+   本机版响应没有 mode（直接是 analyze 结果），不显示徽标 —— 一份页面两处用，
+   不能把网页端口径硬套到本机版上。 */
+function showModeBadge(d){
+  var host = document.getElementById('result');
+  if(!host || !d || !d.mode) return;
+  var rt = d.realtime || {}, snap = d.snapshot || {};
+  var txt = d.mode === 'realtime'
+    ? '联网实时评分 · 取数于 ' + (rt.fetched_at || '—') + ' · ' + (rt.channels_ok || []).length + ' 类公开数据'
+    : '实时取数未成功，本次为五维离线快照（非实时） · 生成于 ' + (snap.generated_at || '—');
+  var div = document.createElement('div');
+  div.id = 'xrayModeBadge';
+  div.style.cssText = 'padding:8px 12px;margin-bottom:10px;border-left:3px solid '
+    + (d.mode === 'realtime' ? '#256fc9' : '#d97706') + ';'
+    + 'background:rgba(127,127,127,.08);font:13px/1.6 system-ui,sans-serif';
+  div.textContent = txt;
+  host.insertBefore(div, host.firstChild);
 }
 
 function submitPersonnel(company){

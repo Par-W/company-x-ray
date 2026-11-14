@@ -175,19 +175,29 @@ import { doProfile } from '../core/actions.js';
       discHtml = `<div class="x-note" style="margin:10px 0">
         交易所披露：${esc(dc.note || '不可用')}。诉讼与团队两维因此无法从公告核对。</div>`;
     }
-    /* 托管版给的是**离线快照**（云端没有 Node 评分引擎，见 cloud_entry.py 的说明）。
-       必须顶在 KPI 上方说清楚：下面是"某一刻算出来的"，不是实时行情。
-       少这一句，用户会把三天前的评分当今天的结论。 */
+    /* 3.7.0：托管版五维评分**默认联网现算**，取数失败才回落离线快照。
+       两种口径都必须顶在 KPI 上方写明「本次是哪一种」—— 只改横幅不改结果卡，
+       等于页面拿着快照还说实时，或者实时结果却没有正面标识。 */
     const snap = inv.snapshot || null;
-    const snapHtml = (snap && snap.mode === 'snapshot') ? `
+    const rt = inv.realtime || null;
+    const mode = inv.mode || (snap && snap.mode === 'snapshot' ? 'snapshot_fallback' : null);
+    const snapHtml = mode === 'snapshot_fallback' ? `
       <div class="x-note" style="margin-bottom:10px;border-left-color:var(--x-warn, #d97706)">
-        <b>这是一份离线快照，不是实时评分</b>：由本机同一份评分代码在
-        <b>${esc(snap.generated_at || '—')}</b> 跑好存下来，行情与公告会变，结论也会跟着变。
-        看实时结论请用本机版。${snap.snapshot_name && snap.snapshot_name !== (r.query || {}).name
+        <b>本次实时取数未成功，这是一份五维离线快照（非实时）</b>：
+        结果由同一份评分代码在 <b>${esc(snap.generated_at || '—')}</b> 生成，
+        行情与公告会变，结论也会跟着变；可稍后重试以取得实时结果。
+        原因：${esc(inv.fallback_reason || '未提供')}。${snap.snapshot_name && snap.snapshot_name !== (r.query || {}).name
           ? `（本次按「${esc(snap.snapshot_name)}」取的快照）` : ''}
       </div>` : '';
+    const rtHtml = (mode === 'realtime' && rt) ? `
+      <div class="x-note" style="margin-bottom:10px;border-left-color:var(--x-brand-solid, #256fc9)">
+        <b>本次为联网实时评分</b>：取数于 <b>${esc(rt.fetched_at || '—')}</b>，
+        当场取得 <b>${esc((rt.channels_ok || []).length)}</b> 类公开数据后按五维算分
+        （耗时 ${esc(rt.elapsed_ms == null ? '—' : rt.elapsed_ms)} ms）。
+        行情与公告变化后需要重查。
+      </div>` : '';
     return `
-      ${snapHtml}
+      ${snapHtml}${rtHtml}
       <div class="x-kpis" style="margin-bottom:10px">
         <div class="x-kpi"><div class="k">投资结论</div><div class="v ${col}">${esc(v.label || '—')}</div></div>
         <div class="x-kpi"><div class="k">综合评分</div><div class="v x-info">${r.score == null ? '—' : esc(r.score)}</div></div>
