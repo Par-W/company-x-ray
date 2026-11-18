@@ -4,6 +4,7 @@
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
 <link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/workbench.css">
 <style>
 /* 语义色统一由 theme.css 提供（3.0.0）：硬红 / 软红 / 黄 / 绿各只认一支 */
 *{box-sizing:border-box}
@@ -12,9 +13,9 @@ body{margin:0;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,s
 
 /* 顶栏 */
 .top{background:var(--x-top-bg);color:var(--x-top-ink);padding:17px 20px 19px;
-     border-bottom:1px solid var(--x-top-line)}
-.top h1{margin:0;font-size:18px;letter-spacing:-.2px;font-weight:700}
-.top p{margin:7px 0 0;color:var(--x-top-muted);font-size:12.5px;line-height:1.6}
+     border-bottom:1px solid var(--x-hair)}
+.top h1{margin:0;font-size:var(--x-fs-title);letter-spacing:-.3px;font-weight:var(--x-fw-bold)}
+.top p{margin:7px 0 0;color:var(--x-top-muted);font-size:var(--x-fs-body);line-height:1.6}
 .wrap{max-width:720px;margin:0 auto;padding:18px 20px 34px}
 
 /* 状态条 */
@@ -28,18 +29,18 @@ body{margin:0;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,s
 
 /* 列表 */
 .list{display:grid;gap:14px}
-.empty,.error{background:var(--x-card);border:1px solid var(--x-line);border-radius:var(--x-r-md);padding:28px;color:var(--x-dot);text-align:center;font-size:14px}
+.empty,.error{background:var(--x-card);border:1px solid var(--x-hair);border-radius:var(--x-r-md);padding:28px;color:var(--x-dot);text-align:center;font-size:14px}
 .error{color:var(--x-bad)}
 
 /* 告警卡：左侧色带 + 等级徽章 + 新到脉冲 */
 .alert{position:relative;background:var(--x-card);border:1px solid var(--x-bad);border-radius:var(--x-r-md);padding:17px 17px 17px 21px;
-       box-shadow:0 4px 16px rgba(15,23,42,.07);overflow:hidden;animation:cardIn .4s cubic-bezier(.16,1,.3,1) both}
+       box-shadow:var(--x-elev);overflow:hidden;animation:cardIn .4s cubic-bezier(.16,1,.3,1) both}
 @keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .alert::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--x-bad)}
 .alert.soft{border-color:var(--x-grey)}.alert.soft::before{background:var(--x-grey)}
 .alert.yellow{border-color:var(--x-grey)}.alert.yellow::before{background:var(--x-grey)}
 .alert.fresh{animation:cardIn .4s cubic-bezier(.16,1,.3,1) both,ring 2s ease-out 2}
-@keyframes ring{0%{box-shadow:0 4px 16px rgba(15,23,42,.07),0 0 0 0 rgba(220,38,38,.42)}100%{box-shadow:0 4px 16px rgba(15,23,42,.07),0 0 0 16px rgba(220,38,38,0)}}
+@keyframes ring{0%{box-shadow:var(--x-elev),0 0 0 0 rgba(220,38,38,.42)}100%{box-shadow:var(--x-elev),0 0 0 16px rgba(220,38,38,0)}}
 .alert.acknowledged{filter:grayscale(.92);opacity:.6}
 .alert.acknowledged::before{background:var(--x-dot)}
 
@@ -50,7 +51,7 @@ body{margin:0;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,s
 .ts{font-size:11.5px;color:var(--x-dot);font-variant-numeric:tabular-nums}
 .merchant{font-size:19.5px;font-weight:800;margin:13px 0 10px;line-height:1.35;word-break:break-word}
 .facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;font-size:13px}
-.fact{background:var(--x-kpi-bg);border:1px solid var(--x-line);border-radius:var(--x-r-sm);padding:9px 10px;color:var(--x-dot)}
+.fact{background:var(--x-kpi-bg);border:1px solid var(--x-hair);border-radius:var(--x-r-sm);padding:9px 10px;color:var(--x-dot)}
 .fact b{display:block;color:var(--x-ink);margin-top:3px;font-size:13.5px;word-break:break-word}
 .amount{color:var(--x-bad);font-weight:900!important;font-size:15px!important}
 .advice{margin-top:12px;padding:12px 13px;background:var(--x-sev-bg-warn);border-left:3px solid var(--x-grey);border-radius:0 var(--x-r-sm) var(--x-r-sm) 0;line-height:1.65;font-size:13.5px}
@@ -62,11 +63,11 @@ body{margin:0;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,s
 .confirm.done{background:var(--x-dot);cursor:default}
 
 /* 自证通道 */
-.verify{background:var(--x-card);border:1px solid var(--x-line);border-radius:var(--x-r-md);padding:19px 18px;margin-top:22px}
+.verify{background:var(--x-card);border:1px solid var(--x-hair);border-radius:var(--x-r-md);padding:19px 18px;margin-top:22px}
 .verify h2{margin:0 0 8px;font-size:16px}
 .verify p{margin:0 0 13px;font-size:12.5px;color:var(--x-muted);line-height:1.7}
 .fields{display:grid;gap:9px}
-.fields input{border:1.5px solid var(--x-line);border-radius:var(--x-r-sm);padding:11px 12px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .16s}
+.fields input{border:1px solid var(--x-hair);border-radius:var(--x-r-sm);padding:11px 12px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .16s}
 .fields input:focus{border-color:var(--x-brand)}
 .verify-msg{margin-top:11px;font-size:12.5px;color:var(--x-muted);min-height:18px}
 
@@ -89,7 +90,7 @@ body{margin:0;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,s
   } catch (e) { /* localStorage 不可用：按 theme.css 的默认值渲染 */ }
 })();
 </script>
-</head><body>
+</head><body class="wb-family">
 <header class="top">
   <h1>👨‍👩‍👧 家人守护 · 风险告警</h1>
   <p>收到告警先看事实和核验依据；涉及金额的先别付，一起核实后再决定。</p>

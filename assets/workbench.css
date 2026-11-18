@@ -1,0 +1,259 @@
+/* ==========================================================================
+ * workbench.css · 全站工作台组件层（3.8.0 界面统一）
+ * --------------------------------------------------------------------------
+ * 3.8.0 只重构了 front/home，另外 5 个页面仍停在「满屏 1px 实线框」的旧语言，
+ * 其中 stage/ 两页还把 theme.css 的色板**整份抄了一遍**（注释明写
+ * 「改一处要改两处」），且裸用 var(--x-r-sm) 却没引入 theme.css —— 圆角变量
+ * 未定义，实际渲染全是直角。本文件把这些页面收敛到同一份真源。
+ *
+ * 真源链路（顺序即层叠顺序，每一层只管自己那件事）：
+ *   theme.css      令牌（颜色 / 间距 / 圆角 / 字号 / 阴影）
+ *     ↓
+ *   workbench.css  **本文件**：跨页共用的「表面呈现」（卡片、磁贴、控件、
+ *                  分隔线、标题层级）。只写表面相关声明，不碰布局。
+ *     ↓
+ *   各页 style 块  该页特有的布局与语义色（列数、版心宽、动画、风险等级）
+ *
+ * 引入方式（两种，但内容完全相同）：
+ *   ① fund / family / query：用 link 标签引 ../assets/workbench.css
+ *      —— 这三个页面在 front/ 与发布站点里的相对路径一致，直接引真源文件。
+ *   ② stage 两页（线上是 apps/invest-score、apps/company-xray）：
+ *      源目录 ../../../assets/ 与线上 ../../assets/ 路径不同，
+ *      由 scripts/gen_page_styles.py 把 theme.css + workbench.css
+ *      **内联进同一个 style 块**并写 sha256 指纹。之所以放进同一个块，
+ *      是因为 invest-score 的 downloadReport() 用 querySelector('style')
+ *      把整块 CSS 注入导出报告 —— 拆成两块会把 .rp-* 规则丢掉。
+ *
+ * ⚠ 改了本文件 / theme.css 之后必须重跑 gen_page_styles.py，
+ *   scripts/check_page_styles.py 会逐字核对内联内容与指纹，忘了重生成会红。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、stage 页面私有变量名 → 真源令牌
+ * --------------------------------------------------------------------------
+ * 两个 stage 页面里有几十处 var(--bg) / var(--card) / var(--tx)，
+ * 全量改名会牵动内联 JS 生成的 HTML，风险太大。这里保留私有名，
+ * 但**值全部改成 var(--x-*) 引用**：CSS 自定义属性在 computed-value 阶段
+ * 才解析引用，因此 [data-theme="light"] 覆盖 --x-* 后，这些别名会自动跟随，
+ * 不再需要自己再抄一份 [data-theme="dark"] 色板。
+ * ========================================================================== */
+:root {
+  --bg:            var(--x-canvas);        /* 画布 */
+  --card:          var(--x-card);          /* 卡片表面 */
+  --line:          var(--x-hair);          /* 发丝线 */
+  --line2:         var(--x-line-strong);   /* 需要更实一点的分界 */
+  --tx:            var(--x-ink);
+  --tx2:           var(--x-muted);
+  --tx3:           var(--x-dot);
+
+  --green:         var(--x-ok);
+  --green-bg:      var(--x-sev-bg-ok);
+  --green-tx:      var(--x-ok);
+  --amber:         var(--x-grey);
+  --amber-bg:      var(--x-sev-bg-warn);
+  --amber-line:    var(--x-grey);
+  --amber-tx:      var(--x-grey);
+  --red:           var(--x-bad);
+  --red-bg:        var(--x-sev-bg-bad);
+  --red-tx:        var(--x-bad);
+  --blue:          var(--x-brand);
+  --blue-bg:       var(--x-sev-bg-info);
+
+  --chart-good:    var(--x-ok);
+  --chart-mid:     var(--x-grey);
+  --chart-bad:     var(--x-bad);
+
+  --soft-bg:       var(--x-tint);
+  --soft-border:   var(--x-soft-border);
+  --brand:         var(--x-brand);
+  --accent:        var(--x-accent);
+}
+
+/* ==========================================================================
+ * 二、画布与排版基底
+ * ========================================================================== */
+body {
+  background: var(--x-canvas);
+  color: var(--x-ink);
+  font-family: var(--x-font-ui);
+  font-size: var(--x-fs-body);
+  line-height: var(--x-lh-body);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 顶栏：与 home 的三段顶栏同一套表面；去掉「一条硬横线切上下」的旧做法 */
+.top {
+  background: var(--x-top-bg);
+  color: var(--x-top-ink);
+  border-bottom: 1px solid var(--x-hair);
+}
+.top h1, header h1 {
+  font-size: var(--x-fs-title);
+  font-weight: var(--x-fw-bold);
+  line-height: var(--x-lh-title);
+  letter-spacing: -.3px;
+}
+.top p, header p {
+  color: var(--x-top-muted);
+  font-size: var(--x-fs-body);
+}
+
+/* 页头 / 区块标题：去 uppercase，靠字号层级而不是全大写小字 */
+h1 { font-size: var(--x-fs-title); font-weight: var(--x-fw-bold); }
+.sec-h, .card h3, .pane-head, .rp-sec h4 {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--x-fs-section);
+  font-weight: var(--x-fw-bold);
+  color: var(--x-ink);
+}
+
+/* ==========================================================================
+ * 三、卡片 / 面板：表面色 + 发丝线 + 柔和环境阴影
+ * --------------------------------------------------------------------------
+ * 这是「作坊气」最主要的来源：每个区块都描一圈 1px 实线。
+ * 统一后层级靠底色差与 elevation，描边只剩一条几乎看不见的发丝线。
+ * ⚠ 只写表面声明，padding / margin / display 一律留给各页 style 块。
+ * ========================================================================== */
+.stat, .pane, .manual, .verify, .card, .entry, .scoreCard, .modal,
+.reportPage, .empty, .error, .verdict, .alert, .offline, .warn,
+.banner, .demoBadge, .rp-calc, .vbanner, .advice, .chain, .eliteBox {
+  border-radius: var(--x-r-md);
+  box-shadow: var(--x-elev);
+}
+.stat, .pane, .manual, .verify, .card, .entry, .scoreCard, .modal,
+.reportPage, .empty, .error {
+  background: var(--x-card);
+  border: 1px solid var(--x-hair);
+}
+
+/* 卡片头：发丝线，不是实线框 */
+.pane-head, .card > .hd, .rp-sec + .rp-sec {
+  border-bottom: 1px solid var(--x-hair);
+  border-top-color: var(--x-hair);
+}
+
+/* 内嵌小块（磁贴 / 事实格 / 提示条）：淡染底 + 小圆角 + 无实线描边 */
+.fact, .link, .metaItem, .srcChip, .chan, .evidence pre,
+.tag, .badge, .level, .chip, .b-ok, .b-bad, .b-warn, .b-grey,
+.aiBadge, .rp-toolbar, .rp-note, .hint, .msg, .verify-msg, .foot, .src {
+  border-radius: var(--x-r-xs);
+}
+.fact, .link, .metaItem, .srcChip, .chan, .evidence pre, .rp-calc {
+  background: var(--x-kpi-bg);
+  border: 1px solid var(--x-hair);
+}
+/* 指标磁贴：放大数字，与 home 的 .x-metric 同一层级 */
+.stat b, .score, .scoreNum, .vamount {
+  font-size: var(--x-fs-display);
+  font-weight: var(--x-fw-bold);
+  line-height: 1.25;
+  letter-spacing: -.5px;
+}
+.stat span, .metaItem .k, .rp-meta .k {
+  font-size: var(--x-fs-micro);
+  color: var(--x-muted);
+  text-transform: none;
+  letter-spacing: .04em;
+}
+
+/* 表格 / 列表分隔：发丝线，去掉 dashed 与 uppercase 表头 */
+th, td, .flow, .sig, .note, .disclaim, .newsItem, .rp-tb th, .rp-tb td,
+.rp-calc .row, .rp-sec + .rp-sec {
+  border-color: var(--x-hair);
+  border-style: solid;
+}
+th, .rp-tb th {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--x-fs-micro);
+  color: var(--x-muted);
+  font-weight: var(--x-fw-bold);
+}
+/* 悬停 / 选中：淡染而不是加粗边框 */
+.flow:hover, .entry:hover, .rp-btn:hover, .abtn:hover {
+  background: var(--x-tint);
+  border-color: var(--x-soft-border);
+}
+.flow.on { background: var(--x-tint); }
+
+/* ==========================================================================
+ * 四、控件：三档圆角、发丝线、双色焦点环
+ * ========================================================================== */
+input, .form-row input, .fields input, .searchRow input, .field input {
+  background: var(--x-input-bg);
+  color: var(--x-ink);
+  border: 1px solid var(--x-hair);
+  border-radius: var(--x-r-sm);
+  font-family: inherit;
+  font-size: var(--x-fs-body);
+}
+input:focus, input[type=text]:focus, .searchRow input:focus, .field input:focus,
+.form-row input:focus, .fields input:focus {
+  border-color: var(--x-brand);
+  outline: var(--x-focus-w) solid var(--x-brand);
+  outline-offset: var(--x-focus-offset);
+  background: var(--x-input-bg-focus);
+}
+
+/* 按钮：默认次要（表面色 + 发丝线），主操作品牌底 + 柔光。
+   ⚠ .btn 在 fund/family/company-xray 是「主操作」，在 invest-score 却是
+     「次要操作」（主操作是 .btn.primary）。同名不同义，靠各页 body 标签上的
+     .wb-* 根类精确限定，不能按类名一刀切 —— 守卫会核对每个页面都有根类。 */
+button, .btn, .confirm, .abtn, .rp-btn, .back {
+  border: 1px solid var(--x-hair);
+  border-radius: var(--x-r-sm);
+  background: var(--x-card);
+  color: var(--x-ink);
+  font-family: inherit;
+  font-size: var(--x-fs-body);
+  font-weight: var(--x-fw-medium);
+  cursor: pointer;
+}
+.wb-query button, .wb-fund .btn, .wb-family .btn, .wb-family .confirm,
+.wb-cx .btn, .wb-invest .btn.primary, .wb-invest .rp-btn.primary {
+  background: var(--x-brand-solid);
+  border-color: var(--x-brand-solid);
+  color: #fff;
+  font-weight: var(--x-fw-bold);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--x-brand-solid) 34%, transparent);
+}
+.wb-query button:hover, .wb-fund .btn:hover, .wb-family .btn:hover,
+.wb-family .confirm:hover, .wb-cx .btn:hover,
+.wb-invest .btn.primary:hover, .wb-invest .rp-btn.primary:hover {
+  background: var(--x-brand-active);
+  border-color: var(--x-brand-active);
+}
+button:disabled, .btn:disabled, .confirm:disabled {
+  opacity: .5;
+  cursor: default;
+}
+.back { background: transparent; border-color: transparent; color: var(--x-brand); }
+.abtn, .rp-btn { background: var(--x-card); color: var(--x-muted); }
+
+/* 搜索胶囊：口径 / 输入框 / 按钮共用一个容器，子控件不再各自描边 */
+.row, .searchRow, .form-row {
+  gap: var(--x-s2);
+}
+.row:focus-within, .searchRow:focus-within {
+  border-color: var(--x-brand);
+}
+
+/* 代码 / 键帽 */
+code { border-radius: var(--x-r-xs); }
+
+/* ==========================================================================
+ * 五、语义色容器：保留风险等级颜色，只统一几何与 elevation
+ * --------------------------------------------------------------------------
+ * 红/绿必须配文字（产品口径），这里不动颜色，只把圆角与阴影交给令牌。
+ * ========================================================================== */
+.verdict, .banner, .alert, .offline, .warn, .demoBadge, .chain, .vbanner {
+  border-radius: var(--x-r-md);
+  box-shadow: var(--x-elev);
+}
+.advice { border-radius: var(--x-r-sm); }
+.badge, .level, .tag, .chip, .b-ok, .b-bad, .b-warn, .b-grey, .aiBadge {
+  border-radius: var(--x-r-xs);
+  border: 0;
+}

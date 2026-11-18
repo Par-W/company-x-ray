@@ -10,53 +10,664 @@
 <link rel="icon" href="../../../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../../../assets/apple-touch-icon.png">
 <style>
-/* 3.0.0：本页原本是第四套色板（米色底 + 靛紫 brand + 紫 accent）。
-   改为与 front/assets/theme.css 同源 —— 数值逐个对齐主站令牌，
-   变量名保持不变（页面里几十处引用，改名风险大）。
-   ⚠ 这套数值与 theme.css 必须一致，改一处要改两处。 */
-:root{
-  --bg:#f0f2f5; --card:#fff; --line:rgba(0,0,0,.14); --line2:rgba(0,0,0,.24);
-  --tx:#1f2937; --tx2:#5a6474; --tx3:#9ca3af;
-  --green:#0f7a54; --green-bg:#f0fdf4; --amber:#b45309; --amber-bg:#fffbeb; --amber-line:#b45309;
-  --red:#b42342; --red-bg:#fef2f2; --blue:#0d5fc8; --blue-bg:#eef4fd;
-  /* 深色模式用（浅色默认 = 现在的硬编码值） */
-  --soft-bg:#eef4fd; --soft-border:#b8d4f8; --brand:#0d5fc8; --accent:#4a90e2;
+/* XRAY_SHARED_CSS:start */
+/* XRAY_SHARED_CSS:sha256=75eceb239b4eadd2e5cc95451d21856571999c54b04155178e1d33cf9a226435 */
+/* ==========================================================================
+ * theme.css · 公司X光 设计系统（3.8.0 工作台重构）
+ * --------------------------------------------------------------------------
+ * 视觉方向：**现代桌面工作台**（Fluent 2 / macOS HIG / VS Code / Linear）
+ *   - 表面分层优先：靠底色差 + 柔和环境阴影划分区域，不再满屏 1px 实线框
+ *   - 留白即层级：更宽松的版心内边距与组件间距，标题与数字拉开字号层级
+ *   - 统一圆润几何：所有交互元素共用三档圆角，弱化"内部工具"的硬边感
+ *   - 强调色克制：低饱和蓝只用于主操作 / 选中 / 焦点，不做大面积填充
+ *
+ * 3.8.0 参照 52 个主流网站与桌面应用重做视觉层（依据见 docs/ui-reference.md）：
+ *   ① 新增 **画布 / 发丝线 / 淡染 / 卡面阴影** 四个语义令牌，让"表面"取代"边框"
+ *   ② 圆角三档放大（4/6/8 → 6/9/14），间距上三档放宽，留白成为主要层级语言
+ *   ③ 标题 / 区块 / 指标数字字号拉开（22 / 15 / 30），正文仍守 12.5 不变
+ *      —— `.x-nav a` 展开字号被 check_nav 层叠实算锁在 12.5，不能动
+ *   ④ 桌面应用那条线补进来：状态栏、检视抽屉、命令面板、键帽按
+ *      VS Code / Obsidian / Figma / Raycast 的桌面惯例精修
+ *
+ * ⚠ 四条硬规矩（scripts/check_layout.py 有静态断言守着）：
+ *   ① 组件里禁止写字面色值，一律取本文件的变量。
+ *   ② 浅色与深色必须**完全对等**：每个 --x-* 颜色变量，
+ *      深色块都必须有对应覆盖（[D] 段断言）—— 不许出现"深色下没换过来的"。
+ *      本版新增的 --x-canvas / --x-hair / --x-tint / --x-elev 都在两块各写一遍。
+ *   ③ 圆角只认 --x-r-xs / --x-r-sm / --x-r-md 三档。
+ *   ④ 间距只认 --x-s1…--x-s8，不再写 9px / 13px 这类散装数字。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、与主题无关的令牌（间距 / 圆角 / 字号 / 层级 / 动效 / 尺寸）
+ * --------------------------------------------------------------------------
+ * 这些**不随主题变**，放在独立的 :root 块里一次定义。
+ * ⚠ 这个块必须排在最前面 —— check_layout 的 [D] 段取**第一个** :root 块
+ *   作为"主题无关"基准，取错了会把颜色变量当成不该有的东西。
+ * ========================================================================== */
+:root {
+  /* ---------- 间距阶梯：4px 基数 ----------
+     取 4 而不是 Carbon 的 2，是因为正文 12.5px × 行高 1.65 ≈ 20px，
+     用 4 的倍数才对得齐行高；2px 档在这个字号下肉眼看不出差别。
+     档位参照 Carbon $spacing-01…（2/4/8/12/16/24/32/40/48），裁掉 2px 档。 */
+  --x-s1: 4px;
+  --x-s2: 8px;
+  --x-s3: 12px;
+  --x-s4: 16px;
+  --x-s5: 24px;
+  --x-s6: 28px;
+  --x-s7: 40px;
+  --x-s8: 56px;
+
+  /* 旧变量名兼容（app.css 里有存量用法） */
+  --x-gap: var(--x-s3);
+  --x-pad: var(--x-s4);
+
+  /* ---------- 圆角三档（3.8.0 放大：统一圆润几何） ----------
+     Fluent 2 / macOS HIG 的做法：所有交互面共用同一套圆角逻辑，
+     足以柔化早期硬边感，又不至于变成消费级气泡。守卫只检查
+     「border-radius 用 var(--x-r-*)」，数值可以随设计迭代。 */
+  --x-r-xs: 6px;   /* 标签、徽标、小按钮 */
+  --x-r-sm: 9px;   /* 按钮、输入框、提示条 */
+  --x-r-md: 14px;  /* 卡片、面板、弹层 */
+
+  /* ---------- 字号阶梯：与行高成对 ----------
+     基准参照阿里云控制台（正文 12 / 行高 20）与终端密度。 */
+  --x-fs-micro:   10.5px;   /* 大写小标签、表头 */
+  --x-fs-small:   11.5px;   /* 次要说明 */
+  --x-fs-body:    12.5px;   /* 正文 */
+  --x-fs-section: 15px;     /* 区块标题（3.8.0） */
+  --x-fs-title:   22px;     /* 页面主标题（3.8.0 放大，拉开层级） */
+  --x-fs-display: 30px;     /* 指标大数字 */
+
+  --x-lh-micro:   1.5;
+  --x-lh-small:   1.6;
+  --x-lh-body:    1.65;
+  --x-lh-title:   1.35;
+
+  /* ---------- 字重：只留三档（阿里云控制台只用 400/600） ---------- */
+  --x-fw-normal: 400;
+  --x-fw-medium: 500;
+  --x-fw-bold:   600;
+
+  /* ---------- 字体族 ---------- */
+  --x-font-ui:   "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --x-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* ---------- 层级（Atlassian 的 z-index 分档 100→800，压缩到本项目） ---------- */
+  --x-z-nav:    20;
+  --x-z-top:    30;
+  --x-z-drawer: 60;
+  --x-z-cmdk:   80;
+  --x-z-toast:  90;
+
+  /* ---------- 动效：两档 ---------- */
+  --x-dur-fast: 100ms;
+  --x-dur-base: 160ms;
+  --x-ease:     cubic-bezier(.2, .7, .3, 1);
+
+  /* ---------- 版心与栏宽 ---------- */
+  --x-w-max:      1640px;   /* 工作区最大版心（对齐 AntD 1440 画布 + 侧栏） */
+  --x-w-read:     760px;    /* 长文可读宽度上限（Notion 的做法） */
+  --x-nav-w:      176px;    /* 侧栏展开宽 */
+  --x-nav-w-mini: 52px;     /* 侧栏折叠宽 */
+  --x-drawer-w:   420px;    /* 右侧检视抽屉宽 */
+
+  /* ---------- 控件尺寸：命中区不搞太小（Fluent 建议 ≥32px） ---------- */
+  --x-h-ctl:    32px;
+  --x-h-ctl-sm: 26px;
+  --x-h-top:    56px;
+
+  /* ---------- 焦点环（GOV.UK：必须能在任何背景上看见） ----------
+     用 outline + offset 而不是 box-shadow：
+     outline 永远画在元素**外面**，offset 让环与控件之间露出底色形成隔离，
+     这样环压在实心品牌色按钮上也不会"消失"。 */
+  --x-focus-w:      2px;
+  --x-focus-offset: 2px;
 }
 
-/* ---------- 深色模式（与主站「外观」设置联动，见 head 内脚本） ---------- */
-[data-theme="dark"]{
-  --bg:#0f1420; --card:#171d2b; --line:rgba(255,255,255,.13); --line2:rgba(255,255,255,.28);
-  --tx:#e6ebf5; --tx2:#94a3b8; --tx3:#64748b;
-  --green:#4fb98a; --green-bg:#142a1e; --amber:#c9a227; --amber-bg:#2b2416; --amber-line:#c9a227;
-  --red:#e08492; --red-bg:#2b1a21; --blue:#4a9eff; --blue-bg:#1a2130;
-  --soft-bg:#1f2735; --soft-border:#2f4a6b; --brand:#4a9eff; --accent:#7fb4f0;
-  color-scheme:dark;
+/* ==========================================================================
+ * 二、深色终端（默认 —— 专业终端的主形态）
+ * ========================================================================== */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* ---------- 强调色：墨蓝 ----------
+     ⚠ 深色下要分两个值用：
+       --x-brand        当**文字色**用（链接、图表线、选中态文字）→ 对深底 6.80，很亮，好认
+       --x-brand-solid  当**按钮底色**用（白字压在上面）→ #4a9eff 白字只有 2.75，不达标，
+                        压到 #256fc9 才有 5.00
+     一个值干两件事必然有一处不达标 —— 这是 3.0.1 的 [E] 段对比度断言抓出来的。 */
+  --x-brand:        #4a9eff;
+  --x-brand-solid:  #256fc9;
+  --x-brand-hover:  #74b4ff;
+  --x-brand-active: #1e62b8;
+  --x-accent:       #6fb0ff;
+  --x-note-bar:     #4a9eff;
+  --x-soft-border:  #24405f;
+  --x-nav-on:       #16283f;
+
+  /* ---------- 高度四档（Atlassian） ----------
+     暗色下 **越"高"越亮**：想象表面被正面照亮，抬得越高接的光越多。
+     这和浅色下"越高越白 + 加阴影"是同一条物理直觉的两面。
+       sunken  页面底（比卡片更暗，把内容"凹"进去）
+       default 卡片
+       raised  悬浮卡 / 行选中 / 可拖拽项
+       overlay 弹层 / 抽屉 / 命令面板
+     ⚠ 暗色阴影几乎不可见，层级差主要来自这里，阴影只是辅助。 */
+  --x-surface-sunken:  #080e18;
+  --x-surface:         #101a2b;
+  --x-surface-raised:  #16233a;
+  --x-surface-overlay: #1b2a43;
+
+  /* 兼容旧变量名（大量组件在用，改名会牵动 20+ 个文件）。
+     ⚠ 这里写**字面量**而不是 var(--x-surface-*) —— check_layout 的 [E] 段
+       要拿实际色值算 WCAG 对比度，`var()` 它取不到值会直接判"色板不全"。
+       两处值必须同步改（同色值，只是写两遍）。 */
+  --x-bg:            #080e18;
+  --x-card:          #101a2b;
+  --x-kpi-bg:        #0e1727;
+  --x-chip-bg:       #142033;
+  --x-code-bg:       #16233a;
+  --x-input-bg:      #0e1727;
+  --x-input-bg-focus:#132034;
+  --x-nav-hover:     #142033;
+  --x-note-bg:       #0e1727;
+  --x-ai-bg:         #0e1727;
+  --x-ai-border:     #24405f;
+  --x-sk-1:          #16233a;
+  --x-sk-2:          #1e2e47;
+  --x-line:          #172438;
+  --x-line-soft:     #16233a;
+  /* 强边框：表格外框、卡片分组边界（比 --x-line 更实一档） */
+  --x-line-strong:   #22334f;
+
+  /* ---------- 3.8.0 工作台表面令牌（浅色块必须逐项对应） ----------
+     --x-canvas 画布：工作区底色，卡片浮在它上面，形成第一层"底/面"关系
+     --x-hair   发丝线：只在必须分隔时出现，替代满屏 1px 实线框
+     --x-tint   淡染底：选中 / 激活 / hover 的品牌色极淡铺底
+     --x-elev   环境阴影：静止时几乎察觉不到，悬浮时才显出高度
+     四者共同把"层级 = 描边"换成"层级 = 表面 + 留白"（Fluent 2 / Material 3）。 */
+  --x-canvas:        #0b1220;
+  --x-hair:          #172236;
+  --x-tint:          #142944;
+  --x-elev:          0 1px 2px rgba(0,0,0,.22), 0 8px 24px rgba(0,0,0,.16);
+
+  /* ---------- 文字 ---------- */
+  --x-ink:           #dfe7f2;
+  --x-muted:         #7d8ea5;
+  --x-dot:           #4a5b73;
+
+  /* ---------- 顶栏（最深的一层，仍用 sunken） ---------- */
+  --x-top-bg:            #080e18;
+  --x-top-ink:           #e8eef7;
+  --x-top-muted:         #6b7d94;
+  --x-top-input-bg:      #101a2b;
+  --x-top-input-bg-focus:#16243a;
+  --x-top-line:          #1b2941;
+
+  /* ---------- 语义色：终端用饱和度更高的红绿黄 ----------
+     ⚠ 中文金融界面是「红涨绿跌」，但本产品的红是**风险红**（与股市红含义不同）。
+       所以任何红/绿**必须配文字**，不能只靠颜色 —— 语义不同的人会读反。 */
+  --x-ok:            #4ec9a0;
+  --x-bad:           #f0776f;
+  --x-grey:          #e8b04b;
+  --x-info:          #4a9eff;
+  --x-sev-bg-bad:    #2a1518;
+  --x-sev-bg-warn:   #2a2313;
+  --x-sev-bg-ok:     #10251f;
+  --x-sev-bg-info:   #101d33;
+
+  /* ---------- 图表 ---------- */
+  --x-chart-fill:   rgba(74,158,255,.16);
+  --x-chart-window: rgba(74,158,255,.12);
+  --x-svg-surface:  #101a2b;
+  --x-svg-line:     #1b2941;
+  --x-svg-ink:      #dfe7f2;
+
+  /* ---------- 阴影：终端里几乎不用阴影，用边框划线 ----------
+     只有 overlay 档（弹层/命令面板/抽屉）给一点，否则浮不起来。 */
+  --x-card-shadow:    0 1px 0 rgba(255,255,255,.02);
+  --x-shadow-raised:  0 1px 2px rgba(0,0,0,.30);
+  --x-shadow-overlay: 0 16px 40px rgba(0,0,0,.48), 0 2px 8px rgba(0,0,0,.28);
+
+  /* ---------- 遮罩（抽屉/命令面板背后的压暗层） ---------- */
+  --x-scrim: rgba(4,8,14,.62);
+
+  /* ---------- 选中态背景（表格行、命令面板高亮） ---------- */
+  --x-sel-bg: #16283f;
+
+  /* ---------- Bulma 主色与圆角对齐 ---------- */
+  --bulma-primary-h: 212; --bulma-primary-s: 100%; --bulma-primary-l: 65%;
+  --bulma-radius: 0.375rem; --bulma-radius-small: 0.25rem;
+  --bulma-radius-medium: 0.5rem; --bulma-radius-large: 0.5rem;
 }
-[data-theme="dark"] .abtn:hover{background:var(--soft-bg);border-color:var(--soft-border);color:var(--brand)}
+
+/* ==========================================================================
+ * 三、浅色终端（Bloomberg 网页版 —— 同样专业，不是"降级版"）
+ * ==========================================================================
+ * 每个 --x-* 颜色变量都在这里逐个覆盖 —— 与深色一一对应，
+ * 不允许深色有、浅色没有（那会让两套模式长得不一样）。
+ */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --x-brand:        #0d5fc8;
+  --x-brand-solid:  #0d5fc8;
+  --x-brand-hover:  #1a76e3;
+  --x-brand-active: #0a4ea8;
+  --x-accent:       #3d7fe0;
+  --x-note-bar:     #3d7fe0;
+  --x-soft-border:  #b8d4f8;
+  --x-nav-on:       #e8f1fe;
+
+  /* 高度四档：浅色下越高越"白 + 阴影"（暗色下是越高越亮，见上） */
+  --x-surface-sunken:  #eef1f6;
+  --x-surface:         #ffffff;
+  --x-surface-raised:  #ffffff;
+  --x-surface-overlay: #ffffff;
+
+  --x-bg:            #eef1f6;
+  --x-card:          #ffffff;
+  --x-kpi-bg:        #f7f9fc;
+  --x-chip-bg:       #eef2f7;
+  --x-code-bg:       #eaeff6;
+  --x-input-bg:      #ffffff;
+  --x-input-bg-focus:#ffffff;
+  --x-nav-hover:     #eef2f7;
+  --x-note-bg:       #f2f6fc;
+  --x-ai-bg:         #f2f6fc;
+  --x-ai-border:     #c5d9f2;
+  --x-sk-1:          #eaeff6;
+  --x-sk-2:          #dde5ef;
+  --x-line:          #e8eaed;   /* 中性灰，B-R=5（守 [D] 段 ≤8） */
+  --x-line-soft:     #eef1f5;
+  --x-line-strong:   #d5dbe3;
+
+  /* 3.8.0 工作台表面令牌：与深色块一一对应，不许漏一项 */
+  --x-canvas:        #f4f6fa;
+  --x-hair:          #e9edf2;
+  --x-tint:          #e4eefc;
+  --x-elev:          0 1px 2px rgba(23,32,46,.04), 0 8px 24px rgba(23,32,46,.07);
+
+  --x-ink:           #17202e;
+  --x-muted:         #5b6a7d;
+  --x-dot:           #94a3b8;
+
+  --x-top-bg:            #1c2b40;
+  --x-top-ink:           #e8eef7;
+  --x-top-muted:         #93a6bd;
+  --x-top-input-bg:      #24354c;
+  --x-top-input-bg-focus:#2d4160;
+  --x-top-line:          #2c3f58;
+
+  --x-ok:            #0f7a54;
+  --x-bad:           #c0392f;
+  --x-grey:          #9c6210;
+  --x-info:          #0d5fc8;
+  --x-sev-bg-bad:    #fdeceb;
+  --x-sev-bg-warn:   #fdf4e3;
+  --x-sev-bg-ok:     #e9f7f1;
+  --x-sev-bg-info:   #eef4fd;
+
+  --x-chart-fill:   rgba(13,95,200,.10);
+  --x-chart-window: rgba(13,95,200,.12);
+  --x-svg-surface:  #ffffff;
+  --x-svg-line:     #e2e8f0;
+  --x-svg-ink:      #374151;
+
+  --x-card-shadow:    0 1px 2px rgba(23,32,46,.04);
+  --x-shadow-raised:  0 1px 3px rgba(23,32,46,.08), 0 1px 2px rgba(23,32,46,.04);
+  --x-shadow-overlay: 0 16px 40px rgba(23,32,46,.13), 0 2px 8px rgba(23,32,46,.06);
+
+  --x-scrim: rgba(23,32,46,.34);
+  --x-sel-bg: #e8f1fe;
+
+  --bulma-primary-h: 215; --bulma-primary-s: 100%; --bulma-primary-l: 45%;
+}
+
+/* ==========================================================================
+ * 四、基础排版
+ * ========================================================================== */
+html, body { background: var(--x-bg); color: var(--x-ink); }
+
+body {
+  font-family: var(--x-font-ui);
+  font-size: var(--x-fs-body);
+  line-height: var(--x-lh-body);
+  font-variant-numeric: tabular-nums;   /* 数字上下对齐，表格才像正经报告 */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: var(--x-brand); text-underline-offset: 2px; }
+a:hover { color: var(--x-brand-hover); }
+
+/* ---------- 焦点态：双色隔离（GOV.UK 的做法） ----------
+   ⚠ 这是全站可访问性的地基，任何组件都不许用 `outline: none` 覆盖掉。
+     outline-offset 让环与控件之间露出页面底色 —— 环压在实心品牌色按钮上
+     也能看清（单色环在同类底色上会"消失"，这是 GOV.UK 明确点出的失败模式）。 */
+:focus-visible {
+  outline: var(--x-focus-w) solid var(--x-brand);
+  outline-offset: var(--x-focus-offset);
+}
+/* 鼠标点击不显示焦点环（键盘才显示），但不能把 :focus-visible 一起关掉 */
+:focus:not(:focus-visible) { outline: none; }
+
+/* ---------- 滚动条：细、低对比 ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--x-sk-2);
+  border-radius: var(--x-r-xs);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--x-dot); background-clip: padding-box; }
+
+/* ---------- 数字等宽 ---------- */
+.num, .x-kpi .v, .x-metric b, td.num, th.num, .x-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ---------- 选中文本 ---------- */
+::selection { background: color-mix(in srgb, var(--x-brand) 32%, transparent); }
+
+/* ---------- 动效统一（尊重系统设置） ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* ==========================================================================
+ * workbench.css · 全站工作台组件层（3.8.0 界面统一）
+ * --------------------------------------------------------------------------
+ * 3.8.0 只重构了 front/home，另外 5 个页面仍停在「满屏 1px 实线框」的旧语言，
+ * 其中 stage/ 两页还把 theme.css 的色板**整份抄了一遍**（注释明写
+ * 「改一处要改两处」），且裸用 var(--x-r-sm) 却没引入 theme.css —— 圆角变量
+ * 未定义，实际渲染全是直角。本文件把这些页面收敛到同一份真源。
+ *
+ * 真源链路（顺序即层叠顺序，每一层只管自己那件事）：
+ *   theme.css      令牌（颜色 / 间距 / 圆角 / 字号 / 阴影）
+ *     ↓
+ *   workbench.css  **本文件**：跨页共用的「表面呈现」（卡片、磁贴、控件、
+ *                  分隔线、标题层级）。只写表面相关声明，不碰布局。
+ *     ↓
+ *   各页 style 块  该页特有的布局与语义色（列数、版心宽、动画、风险等级）
+ *
+ * 引入方式（两种，但内容完全相同）：
+ *   ① fund / family / query：用 link 标签引 ../assets/workbench.css
+ *      —— 这三个页面在 front/ 与发布站点里的相对路径一致，直接引真源文件。
+ *   ② stage 两页（线上是 apps/invest-score、apps/company-xray）：
+ *      源目录 ../../../assets/ 与线上 ../../assets/ 路径不同，
+ *      由 scripts/gen_page_styles.py 把 theme.css + workbench.css
+ *      **内联进同一个 style 块**并写 sha256 指纹。之所以放进同一个块，
+ *      是因为 invest-score 的 downloadReport() 用 querySelector('style')
+ *      把整块 CSS 注入导出报告 —— 拆成两块会把 .rp-* 规则丢掉。
+ *
+ * ⚠ 改了本文件 / theme.css 之后必须重跑 gen_page_styles.py，
+ *   scripts/check_page_styles.py 会逐字核对内联内容与指纹，忘了重生成会红。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、stage 页面私有变量名 → 真源令牌
+ * --------------------------------------------------------------------------
+ * 两个 stage 页面里有几十处 var(--bg) / var(--card) / var(--tx)，
+ * 全量改名会牵动内联 JS 生成的 HTML，风险太大。这里保留私有名，
+ * 但**值全部改成 var(--x-*) 引用**：CSS 自定义属性在 computed-value 阶段
+ * 才解析引用，因此 [data-theme="light"] 覆盖 --x-* 后，这些别名会自动跟随，
+ * 不再需要自己再抄一份 [data-theme="dark"] 色板。
+ * ========================================================================== */
+:root {
+  --bg:            var(--x-canvas);        /* 画布 */
+  --card:          var(--x-card);          /* 卡片表面 */
+  --line:          var(--x-hair);          /* 发丝线 */
+  --line2:         var(--x-line-strong);   /* 需要更实一点的分界 */
+  --tx:            var(--x-ink);
+  --tx2:           var(--x-muted);
+  --tx3:           var(--x-dot);
+
+  --green:         var(--x-ok);
+  --green-bg:      var(--x-sev-bg-ok);
+  --green-tx:      var(--x-ok);
+  --amber:         var(--x-grey);
+  --amber-bg:      var(--x-sev-bg-warn);
+  --amber-line:    var(--x-grey);
+  --amber-tx:      var(--x-grey);
+  --red:           var(--x-bad);
+  --red-bg:        var(--x-sev-bg-bad);
+  --red-tx:        var(--x-bad);
+  --blue:          var(--x-brand);
+  --blue-bg:       var(--x-sev-bg-info);
+
+  --chart-good:    var(--x-ok);
+  --chart-mid:     var(--x-grey);
+  --chart-bad:     var(--x-bad);
+
+  --soft-bg:       var(--x-tint);
+  --soft-border:   var(--x-soft-border);
+  --brand:         var(--x-brand);
+  --accent:        var(--x-accent);
+}
+
+/* ==========================================================================
+ * 二、画布与排版基底
+ * ========================================================================== */
+body {
+  background: var(--x-canvas);
+  color: var(--x-ink);
+  font-family: var(--x-font-ui);
+  font-size: var(--x-fs-body);
+  line-height: var(--x-lh-body);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 顶栏：与 home 的三段顶栏同一套表面；去掉「一条硬横线切上下」的旧做法 */
+.top {
+  background: var(--x-top-bg);
+  color: var(--x-top-ink);
+  border-bottom: 1px solid var(--x-hair);
+}
+.top h1, header h1 {
+  font-size: var(--x-fs-title);
+  font-weight: var(--x-fw-bold);
+  line-height: var(--x-lh-title);
+  letter-spacing: -.3px;
+}
+.top p, header p {
+  color: var(--x-top-muted);
+  font-size: var(--x-fs-body);
+}
+
+/* 页头 / 区块标题：去 uppercase，靠字号层级而不是全大写小字 */
+h1 { font-size: var(--x-fs-title); font-weight: var(--x-fw-bold); }
+.sec-h, .card h3, .pane-head, .rp-sec h4 {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--x-fs-section);
+  font-weight: var(--x-fw-bold);
+  color: var(--x-ink);
+}
+
+/* ==========================================================================
+ * 三、卡片 / 面板：表面色 + 发丝线 + 柔和环境阴影
+ * --------------------------------------------------------------------------
+ * 这是「作坊气」最主要的来源：每个区块都描一圈 1px 实线。
+ * 统一后层级靠底色差与 elevation，描边只剩一条几乎看不见的发丝线。
+ * ⚠ 只写表面声明，padding / margin / display 一律留给各页 style 块。
+ * ========================================================================== */
+.stat, .pane, .manual, .verify, .card, .entry, .scoreCard, .modal,
+.reportPage, .empty, .error, .verdict, .alert, .offline, .warn,
+.banner, .demoBadge, .rp-calc, .vbanner, .advice, .chain, .eliteBox {
+  border-radius: var(--x-r-md);
+  box-shadow: var(--x-elev);
+}
+.stat, .pane, .manual, .verify, .card, .entry, .scoreCard, .modal,
+.reportPage, .empty, .error {
+  background: var(--x-card);
+  border: 1px solid var(--x-hair);
+}
+
+/* 卡片头：发丝线，不是实线框 */
+.pane-head, .card > .hd, .rp-sec + .rp-sec {
+  border-bottom: 1px solid var(--x-hair);
+  border-top-color: var(--x-hair);
+}
+
+/* 内嵌小块（磁贴 / 事实格 / 提示条）：淡染底 + 小圆角 + 无实线描边 */
+.fact, .link, .metaItem, .srcChip, .chan, .evidence pre,
+.tag, .badge, .level, .chip, .b-ok, .b-bad, .b-warn, .b-grey,
+.aiBadge, .rp-toolbar, .rp-note, .hint, .msg, .verify-msg, .foot, .src {
+  border-radius: var(--x-r-xs);
+}
+.fact, .link, .metaItem, .srcChip, .chan, .evidence pre, .rp-calc {
+  background: var(--x-kpi-bg);
+  border: 1px solid var(--x-hair);
+}
+/* 指标磁贴：放大数字，与 home 的 .x-metric 同一层级 */
+.stat b, .score, .scoreNum, .vamount {
+  font-size: var(--x-fs-display);
+  font-weight: var(--x-fw-bold);
+  line-height: 1.25;
+  letter-spacing: -.5px;
+}
+.stat span, .metaItem .k, .rp-meta .k {
+  font-size: var(--x-fs-micro);
+  color: var(--x-muted);
+  text-transform: none;
+  letter-spacing: .04em;
+}
+
+/* 表格 / 列表分隔：发丝线，去掉 dashed 与 uppercase 表头 */
+th, td, .flow, .sig, .note, .disclaim, .newsItem, .rp-tb th, .rp-tb td,
+.rp-calc .row, .rp-sec + .rp-sec {
+  border-color: var(--x-hair);
+  border-style: solid;
+}
+th, .rp-tb th {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--x-fs-micro);
+  color: var(--x-muted);
+  font-weight: var(--x-fw-bold);
+}
+/* 悬停 / 选中：淡染而不是加粗边框 */
+.flow:hover, .entry:hover, .rp-btn:hover, .abtn:hover {
+  background: var(--x-tint);
+  border-color: var(--x-soft-border);
+}
+.flow.on { background: var(--x-tint); }
+
+/* ==========================================================================
+ * 四、控件：三档圆角、发丝线、双色焦点环
+ * ========================================================================== */
+input, .form-row input, .fields input, .searchRow input, .field input {
+  background: var(--x-input-bg);
+  color: var(--x-ink);
+  border: 1px solid var(--x-hair);
+  border-radius: var(--x-r-sm);
+  font-family: inherit;
+  font-size: var(--x-fs-body);
+}
+input:focus, input[type=text]:focus, .searchRow input:focus, .field input:focus,
+.form-row input:focus, .fields input:focus {
+  border-color: var(--x-brand);
+  outline: var(--x-focus-w) solid var(--x-brand);
+  outline-offset: var(--x-focus-offset);
+  background: var(--x-input-bg-focus);
+}
+
+/* 按钮：默认次要（表面色 + 发丝线），主操作品牌底 + 柔光。
+   ⚠ .btn 在 fund/family/company-xray 是「主操作」，在 invest-score 却是
+     「次要操作」（主操作是 .btn.primary）。同名不同义，靠各页 body 标签上的
+     .wb-* 根类精确限定，不能按类名一刀切 —— 守卫会核对每个页面都有根类。 */
+button, .btn, .confirm, .abtn, .rp-btn, .back {
+  border: 1px solid var(--x-hair);
+  border-radius: var(--x-r-sm);
+  background: var(--x-card);
+  color: var(--x-ink);
+  font-family: inherit;
+  font-size: var(--x-fs-body);
+  font-weight: var(--x-fw-medium);
+  cursor: pointer;
+}
+.wb-query button, .wb-fund .btn, .wb-family .btn, .wb-family .confirm,
+.wb-cx .btn, .wb-invest .btn.primary, .wb-invest .rp-btn.primary {
+  background: var(--x-brand-solid);
+  border-color: var(--x-brand-solid);
+  color: #fff;
+  font-weight: var(--x-fw-bold);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--x-brand-solid) 34%, transparent);
+}
+.wb-query button:hover, .wb-fund .btn:hover, .wb-family .btn:hover,
+.wb-family .confirm:hover, .wb-cx .btn:hover,
+.wb-invest .btn.primary:hover, .wb-invest .rp-btn.primary:hover {
+  background: var(--x-brand-active);
+  border-color: var(--x-brand-active);
+}
+button:disabled, .btn:disabled, .confirm:disabled {
+  opacity: .5;
+  cursor: default;
+}
+.back { background: transparent; border-color: transparent; color: var(--x-brand); }
+.abtn, .rp-btn { background: var(--x-card); color: var(--x-muted); }
+
+/* 搜索胶囊：口径 / 输入框 / 按钮共用一个容器，子控件不再各自描边 */
+.row, .searchRow, .form-row {
+  gap: var(--x-s2);
+}
+.row:focus-within, .searchRow:focus-within {
+  border-color: var(--x-brand);
+}
+
+/* 代码 / 键帽 */
+code { border-radius: var(--x-r-xs); }
+
+/* ==========================================================================
+ * 五、语义色容器：保留风险等级颜色，只统一几何与 elevation
+ * --------------------------------------------------------------------------
+ * 红/绿必须配文字（产品口径），这里不动颜色，只把圆角与阴影交给令牌。
+ * ========================================================================== */
+.verdict, .banner, .alert, .offline, .warn, .demoBadge, .chain, .vbanner {
+  border-radius: var(--x-r-md);
+  box-shadow: var(--x-elev);
+}
+.advice { border-radius: var(--x-r-sm); }
+.badge, .level, .tag, .chip, .b-ok, .b-bad, .b-warn, .b-grey, .aiBadge {
+  border-radius: var(--x-r-xs);
+  border: 0;
+}
+/* XRAY_SHARED_CSS:end */
 
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:"PingFang SC","Microsoft YaHei",-apple-system,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;}
 .wrap{max-width:1020px;margin:0 auto;padding:36px 20px 60px;}
 header{margin-bottom:26px;}
-header h1{font-size:23px;font-weight:500;letter-spacing:.5px;}
+header h1{font-size:var(--x-fs-title);font-weight:var(--x-fw-bold);letter-spacing:-.3px;}
 header p{font-size:13px;color:var(--tx2);margin-top:8px;line-height:1.7;}
 .srcRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
-.srcChip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;border-radius:var(--x-r-sm);background:var(--card);border:.5px solid var(--line);}
+.srcChip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;border-radius:var(--x-r-sm);background:var(--card);border:1px solid var(--x-hair);}
 .srcChip i{width:7px;height:7px;border-radius:50%;background:var(--tx3);}
 .srcChip.ok i{background:var(--green);}
 .srcChip.no i{background:var(--amber-line);}
 .searchRow{display:flex;gap:10px;margin-bottom:8px;}
-.searchRow input{flex:1;height:46px;border:.5px solid var(--line2);border-radius:var(--x-r-sm);padding:0 16px;font-size:15px;outline:none;background:var(--card);}
+.searchRow input{flex:1;height:46px;border:1px solid var(--x-hair);border-radius:var(--x-r-sm);padding:0 16px;font-size:15px;outline:none;background:var(--card);}
 .searchRow input:focus{border-color:var(--blue);}
-.btn{height:46px;padding:0 26px;border-radius:var(--x-r-sm);font-size:14px;cursor:pointer;border:.5px solid var(--tx);background:var(--tx);color:var(--bg);}
+.btn{height:46px;padding:0 26px;border-radius:var(--x-r-sm);font-size:14px;cursor:pointer;border:1px solid var(--x-hair);background:var(--tx);color:var(--bg);}
 .btn:disabled{opacity:.5;cursor:not-allowed;}
 .hint{font-size:12px;color:var(--tx3);margin-bottom:20px;line-height:1.6;}
 #loading{display:none;text-align:center;padding:44px 0;}
-#loading .spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite;}
+#loading .spinner{width:34px;height:34px;border:3px solid var(--x-hair);border-top-color:var(--blue);border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 #loading p{font-size:13px;color:var(--tx2);}
 #result{display:none;}
-.card{background:var(--card);border:.5px solid var(--line);border-radius:var(--x-r-md);padding:20px 22px;margin-bottom:16px;}
+.card{background:var(--card);border:1px solid var(--x-hair);border-radius:var(--x-r-md);padding:20px 22px;margin-bottom:16px;}
 .card h3{font-size:14px;font-weight:500;margin-bottom:14px;}
 .card h3 .sub{font-size:11px;color:var(--tx3);font-weight:400;margin-left:8px;}
 .metaGrid{display:flex;gap:12px;flex-wrap:wrap;}
@@ -64,8 +675,8 @@ header p{font-size:13px;color:var(--tx2);margin-top:8px;line-height:1.7;}
 .metaItem .k{font-size:11px;color:var(--tx3);margin-bottom:3px;}
 .metaItem .v{font-size:13px;font-weight:500;word-break:break-all;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
-th{padding:5px 8px;border-bottom:1px solid var(--line);color:var(--tx3);font-size:11px;font-weight:400;text-align:left;}
-td{padding:8px;border-bottom:.5px dashed var(--line);vertical-align:top;}
+th{padding:5px 8px;border-bottom:1px solid var(--x-hair);color:var(--tx3);font-size:11px;font-weight:400;text-align:left;}
+td{padding:8px;border-bottom:1px solid var(--x-hair);vertical-align:top;}
 td.r{text-align:right;}
 td .nm{font-weight:500;}
 td .res{font-size:11px;color:var(--tx3);margin-top:2px;}
@@ -75,21 +686,21 @@ td .res{font-size:11px;color:var(--tx3);margin-top:2px;}
 .chip.green{background:var(--green-bg);color:var(--green);}
 .chip.gray{background:var(--bg);color:var(--tx2);}
 /* [整合新增] AI 标注 + 每人「搜索人员事迹」按钮 */
-.aiBadge{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:6px;
+.aiBadge{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:var(--x-r-xs);
   background:var(--accent);color:#fff;letter-spacing:.5px;vertical-align:middle;}
 .acts{white-space:nowrap;}
 .abtn{display:inline-block;font-size:11.5px;padding:3px 8px;margin-right:5px;border-radius:var(--x-r-sm);
-  border:1px solid var(--line,#e2e8f0);background:var(--card);color:var(--tx2);text-decoration:none;}
+  border:1px solid var(--x-hair);background:var(--card);color:var(--tx2);text-decoration:none;}
 .abtn:hover{background:var(--soft-bg);border-color:var(--soft-border);color:var(--brand);text-decoration:none;}
 .resume{font-size:12px;color:var(--tx2);margin-top:5px;line-height:1.6;}
 .chan{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 10px;border-radius:var(--x-r-sm);background:var(--bg);margin:0 8px 8px 0;}
 .chan i{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .chan.ok i{background:var(--green);} .chan.plan i{background:var(--amber-line);} .chan.failed i,.chan.empty i,.chan.auth i{background:var(--tx3);}
 .chan span{color:var(--tx2);}
-.note{font-size:12px;color:var(--tx2);line-height:1.7;padding:6px 0;border-bottom:.5px dashed var(--line);}
+.note{font-size:12px;color:var(--tx2);line-height:1.7;padding:6px 0;border-bottom:1px solid var(--x-hair);}
 .note:last-child{border-bottom:none;}
 .empty{font-size:13px;color:var(--tx3);padding:8px 0;}
-.disclaim{margin-top:26px;padding-top:16px;border-top:.5px solid var(--line);font-size:11px;color:var(--tx3);line-height:1.8;}
+.disclaim{margin-top:26px;padding-top:16px;border-top:1px solid var(--x-hair);font-size:11px;color:var(--tx3);line-height:1.8;}
 .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:var(--x-r-sm);margin-left:8px;vertical-align:2px;}
 .badge.top{background:var(--amber-bg);color:var(--amber);}
 </style>
@@ -116,7 +727,7 @@ td .res{font-size:11px;color:var(--tx3);margin-top:2px;}
 })();
 </script>
 </head>
-<body>
+<body class="wb-cx">
 <div class="wrap">
   <header>
     <h1>公司人员透视 · X光</h1>

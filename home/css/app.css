@@ -4,7 +4,7 @@
  * 骨架：深色顶栏 + 左侧导航 + 右侧工作区（三区控制台）
  * 组件：终端风格 —— 1px 分隔线、紧凑行高、等宽数字、表格优先
  *
- * 3.2.0 的重构依据见 docs/ui-reference.md（34 个主流站点）。
+ * 设计依据见 docs/ui-reference.md（52 条：34 网站 + 18 桌面应用与平台）。
  * 三件事变了：
  *   ① 所有 padding/margin 从散装数字（9px 13px / 10px 12px / 7px 11px）
  *      收敛到 --x-s1…--x-s8 阶梯（Carbon：间距本身表达关系与层级）
@@ -23,6 +23,9 @@
   display: grid;
   grid-template-rows: auto 1fr;
   min-height: 100vh;
+  /* 3.8.0：画布单独一档底色。卡片靠表面色 + 柔和阴影浮起来，
+     不再靠满屏 1px 实线框划分区域（Fluent 2 / Material 3 的分层做法）。 */
+  background: var(--x-canvas);
 }
 .x-app-body {
   display: grid;
@@ -30,9 +33,9 @@
   min-height: 0;
 }
 .x-nav {
-  background: var(--x-kpi-bg);
-  border-right: 1px solid var(--x-line);
-  padding: var(--x-s2) 0 var(--x-s6);
+  background: var(--x-canvas);
+  border-right: 1px solid var(--x-hair);
+  padding: var(--x-s3) 0 var(--x-s6);
   overflow-y: auto;
   position: sticky;
   top: 0;
@@ -45,7 +48,9 @@
   min-width: 0;
   width: 100%;
   max-width: var(--x-w-max);
-  padding: var(--x-s5) var(--x-s6) var(--x-s8);
+  /* 3.8.0：留白即层级。内容不再贴着侧栏与顶栏，
+        四周留够呼吸空间（Notion / Linear 的做法）。 */
+  padding: var(--x-s6) var(--x-s7) var(--x-s8);
   overflow-x: hidden;
 }
 
@@ -65,8 +70,8 @@
 .x-top-inner {
   display: flex;
   align-items: center;
-  gap: var(--x-s3);
-  padding: 0 var(--x-s6);
+  gap: var(--x-s4);
+  padding: 0 var(--x-s7);
   height: var(--x-h-top);
   max-width: var(--x-w-max);
 }
@@ -75,8 +80,8 @@
   align-items: center;
   gap: var(--x-s2);
   font-weight: var(--x-fw-bold);
-  font-size: 13.5px;
-  letter-spacing: -.1px;
+  font-size: 15px;
+  letter-spacing: -.2px;
   white-space: nowrap;
   color: var(--x-top-ink);
   text-decoration: none;
@@ -102,16 +107,31 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  /* 3.8.0：「后端 / 插件」收成两枚状态胶囊，
+     顶栏从九个散控件变成品牌 / 搜索 / 状态三段（桌面工具栏惯例）。 */
+  padding: 3px var(--x-s2);
+  border: 1px solid var(--x-top-line);
+  border-radius: var(--x-r-xs);
+  background: var(--x-top-input-bg);
 }
 
-/* 查询区：顶栏里唯一的输入区，占弹性宽度 */
+/* 查询区：顶栏里唯一的输入区，占弹性宽度。
+   3.8.0 做成**一体化搜索胶囊**（Linear / Vercel / VS Code 的做法）：
+   口径下拉、输入框、查询按钮共用一个容器底色与圆角，子控件不再各自描边 ——
+   原来三个独立边框 + 九个控件挤一行，是"作坊气"最明显的来源。 */
 .x-top-search {
   display: flex;
-  gap: var(--x-s2);
+  gap: 0;
   align-items: center;
-  flex: 0 1 460px;
+  flex: 0 1 500px;
   min-width: 0;
+  background: var(--x-top-input-bg);
+  border: 1px solid var(--x-top-line);
+  border-radius: var(--x-r-sm);
+  padding: 3px;
+  transition: border-color var(--x-dur-fast) var(--x-ease);
 }
+.x-top-search:focus-within { border-color: var(--x-brand); }
 
 /* ---------- 状态灯 ---------- */
 .x-dot {
@@ -134,27 +154,33 @@
 .x-nav-group { padding: 0 0 var(--x-s1); }
 .x-nav-title {
   font-size: var(--x-fs-micro);
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  /* 3.8.0：中文界面里 uppercase + 大写字距没有语义，
+     只会显得像内部工具。分组靠留白，不靠撑大字的存在感（Linear / VS Code）。 */
+  letter-spacing: .04em;
   color: var(--x-muted);
-  padding: var(--x-s3) var(--x-s4) var(--x-s1);
-  font-weight: var(--x-fw-bold);
+  padding: var(--x-s5) var(--x-s5) var(--x-s1);
+  font-weight: var(--x-fw-medium);
 }
 .x-nav a {
   display: flex;
   align-items: center;
   gap: var(--x-s2);
-  padding: 6px var(--x-s4);
+  /* 3.8.0：从"贴着侧栏边缘的一行文字"改成**圆角填充块**，
+     与侧栏边缘留出边距（VS Code Activity Bar / Fluent NavigationView）。 */
+  margin: 1px var(--x-s2);
+  padding: 7px var(--x-s3);
   font-size: var(--x-fs-body);
   color: var(--x-ink);
   text-decoration: none;
   border-left: 2px solid transparent;
+  border-radius: var(--x-r-sm);
   transition: background var(--x-dur-fast) var(--x-ease),
               color var(--x-dur-fast) var(--x-ease);
 }
-.x-nav a:hover { background: var(--x-nav-hover); color: var(--x-brand); }
+.x-nav a:hover { background: var(--x-nav-hover); }
 .x-nav a.on {
-  background: var(--x-nav-on);
+  /* 选中态三重编码：淡染底 + 左侧强调条 + 加粗文字，不只靠颜色 */
+  background: var(--x-tint);
   border-left-color: var(--x-brand);
   color: var(--x-brand);
   font-weight: var(--x-fw-bold);
@@ -175,10 +201,10 @@
    又因为没写 fill:none + stroke:currentColor → 路径默认填黑、描边不跟随文字色。
    结果就是侧栏一排黑块。尺寸用 em，跟着字号走，折叠态改字号即可缩放。 */
 .x-nav a .ni {
-  width: 1.2em; height: 1.2em;
+  width: 1.3em; height: 1.3em;
   flex: 0 0 auto;
   stroke: currentColor; fill: none;
-  stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+  stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
   opacity: .62;
   transition: opacity var(--x-dur-fast) var(--x-ease);
 }
@@ -223,12 +249,18 @@
 .x-nav a .nav-badge:not(.on) { display: none; }
 .x-nav a .nav-badge.on { display: inline-flex; }
 .x-nav-foot {
+  /* 3.8.0：状态栏（VS Code / Obsidian 桌面端的常驻底部条）。
+     版本与运行态并排、等宽字，用发丝线上边界，不抢主内容。 */
   margin-top: auto;
-  padding: var(--x-s3) var(--x-s4) 0;
-  border-top: 1px solid var(--x-line);
+  padding: var(--x-s3) var(--x-s4) var(--x-s2);
+  border-top: 1px solid var(--x-hair);
   font-size: var(--x-fs-micro);
   color: var(--x-muted);
   line-height: 1.8;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--x-s2);
+  flex-wrap: wrap;
 }
 .x-nav-foot .v { font-family: var(--x-font-mono); color: var(--x-ink); }
 
@@ -241,9 +273,10 @@
  *   （3.1.0 资料库页就是手写的 24px 标题，结果同一产品里两种标题层级。）
  * ========================================================================== */
 .x-page-head {
-  margin: 0 0 var(--x-s5);
-  padding: 0 0 var(--x-s3);
-  border-bottom: 1px solid var(--x-line);
+  /* 3.8.0：页头不再用一条横线把页面切开，
+     靠标题字号（22px）与下方留白建立层级（Stripe / Linear）。 */
+  margin: 0 0 var(--x-s6);
+  padding: 0 0 var(--x-s1);
 }
 .x-crumbs {
   display: flex;
@@ -251,7 +284,7 @@
   gap: 6px;
   font-size: var(--x-fs-small);
   color: var(--x-muted);
-  margin-bottom: var(--x-s1);
+  margin-bottom: var(--x-s2);
   flex-wrap: wrap;
 }
 .x-crumbs a { color: var(--x-muted); text-decoration: none; }
@@ -268,7 +301,7 @@
   margin: 0;
   font-size: var(--x-fs-title);
   font-weight: var(--x-fw-bold);
-  letter-spacing: -.2px;
+  letter-spacing: -.4px;
   line-height: var(--x-lh-title);
 }
 .x-page-head .sub {
@@ -293,18 +326,28 @@
  * ========================================================================== */
 .x-metrics, .x-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
-  gap: 1px;
-  background: var(--x-line);
-  border: 1px solid var(--x-line);
-  border-radius: var(--x-r-md);
-  overflow: hidden;
-  margin-bottom: var(--x-s4);
+  grid-template-columns: repeat(auto-fit, minmax(184px, 1fr));
+  /* 3.8.0：从"1px 网格线拼成的一整块"改成**四张独立磁贴**。
+     网格线是内部报表最典型的作坊气；留白 + 独立表面才是工作台做法
+     （Datadog / Vercel / Linear 的指标卡）。 */
+  gap: var(--x-s3);
+  background: transparent;
+  border: 0;
+  margin-bottom: var(--x-s5);
 }
 .x-metric, .x-kpi {
-  background: var(--x-kpi-bg);
-  padding: var(--x-s2) var(--x-s3);
+  background: var(--x-card);
+  border: 1px solid var(--x-hair);
+  border-radius: var(--x-r-md);
+  box-shadow: var(--x-card-shadow);
+  padding: var(--x-s3) var(--x-s4);
   min-width: 0;
+  transition: box-shadow var(--x-dur-base) var(--x-ease),
+              transform var(--x-dur-base) var(--x-ease);
+}
+.x-metric:hover, .x-kpi:hover {
+  box-shadow: var(--x-elev);
+  transform: translateY(-1px);
 }
 .x-metric .k, .x-kpi .k {
   font-size: var(--x-fs-micro);
@@ -340,19 +383,23 @@
  * 六、卡片 / 面板
  * ========================================================================== */
 .x-card {
+  /* 3.8.0：层级从"1px 实线框"换成"表面色 + 柔和环境阴影"。
+     Fluent 2：层级靠颜色与 elevation，静止时阴影几乎察觉不到；
+     硬边描边会在一屏里制造满屏噪音。 */
   background: var(--x-card);
-  border: 1px solid var(--x-line);
+  border: 1px solid var(--x-hair);
   border-radius: var(--x-r-md);
-  margin-bottom: var(--x-s3);
+  box-shadow: var(--x-elev);
+  margin-bottom: var(--x-s5);
   min-width: 0;
 }
 .x-card > .hd {
   display: flex;
   align-items: center;
   gap: var(--x-s2);
-  padding: var(--x-s2) var(--x-s3);
-  border-bottom: 1px solid var(--x-line);
-  min-height: 38px;
+  padding: var(--x-s3) var(--x-s4);
+  border-bottom: 1px solid var(--x-hair);
+  min-height: 46px;
 }
 .x-card > .hd h2 {
   margin: 0;
@@ -362,13 +409,13 @@
   line-height: var(--x-lh-title);
 }
 .x-card > .hd .right { margin-left: auto; display: flex; gap: var(--x-s2); align-items: center; }
-.x-card > .bd { padding: var(--x-s3); }
+.x-card > .bd { padding: var(--x-s4); }
 /* 贴边内容（表格/列表）：去掉 bd 的内边距，靠卡片边框兜住 */
 .x-card > .bd.is-flush { padding: 0; }
 /* 卡片脚注：给"这段数字是怎么来的"一句话说明 */
 .x-card > .ft {
-  padding: var(--x-s2) var(--x-s3);
-  border-top: 1px solid var(--x-line);
+  padding: var(--x-s3) var(--x-s4);
+  border-top: 1px solid var(--x-hair);
   font-size: var(--x-fs-small);
   color: var(--x-muted);
   line-height: var(--x-lh-small);
@@ -390,7 +437,7 @@
  *   · 数字列右对齐 + 等宽
  * ========================================================================== */
 .x-table-wrap {
-  border: 1px solid var(--x-line);
+  border: 1px solid var(--x-hair);
   border-radius: var(--x-r-md);
   overflow: auto;
   max-height: 68vh;
@@ -407,12 +454,13 @@
   text-align: left;
   font-size: var(--x-fs-micro);
   font-weight: var(--x-fw-bold);
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  /* 3.8.0：中文表头没有大小写，uppercase 只会把字距撑得生硬。
+     表头靠字重 + 淡色 + 发丝下边界区分，不再铺一整条深色底。 */
+  letter-spacing: .02em;
   color: var(--x-muted);
-  padding: var(--x-s2) 10px;
-  border-bottom: 1px solid var(--x-line);
-  background: var(--x-kpi-bg);
+  padding: var(--x-s3) var(--x-s3);
+  border-bottom: 1px solid var(--x-hair);
+  background: var(--x-card);
   white-space: nowrap;
   /* 粘性表头：长表滚到第 20 行还知道这列是什么（腾讯云规范） */
   position: sticky;
@@ -420,13 +468,13 @@
   z-index: 2;
 }
 .x-table td {
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--x-line-soft);
+  padding: var(--x-s2) var(--x-s3);
+  border-bottom: 1px solid var(--x-hair);
   vertical-align: top;
 }
 .x-table tbody tr:last-child td { border-bottom: 0; }
 .x-table tbody tr { transition: background var(--x-dur-fast) var(--x-ease); }
-.x-table tbody tr:hover td { background: var(--x-kpi-bg); }
+.x-table tbody tr:hover td { background: var(--x-nav-hover); }
 .x-table tbody tr.is-sel td { background: var(--x-sel-bg); }
 .x-table tr.conflict td { background: var(--x-sev-bg-bad); }
 .x-table th.num, .x-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -456,7 +504,7 @@
   height: var(--x-h-ctl);
   border-radius: var(--x-r-sm);
   background: var(--x-input-bg);
-  border: 1px solid var(--x-line);
+  border: 1px solid var(--x-hair);
   color: var(--x-ink);
   font-size: var(--x-fs-body);
   padding: 0 10px;
@@ -486,8 +534,8 @@
   height: var(--x-h-ctl);
   padding: 0 var(--x-s3);
   border-radius: var(--x-r-sm);
-  border: 1px solid var(--x-line);
-  background: var(--x-kpi-bg);
+  border: 1px solid var(--x-hair);
+  background: var(--x-card);
   color: var(--x-ink);
   font-size: var(--x-fs-body);
   font-weight: var(--x-fw-medium);
@@ -508,6 +556,9 @@
   background: var(--x-brand-solid);
   border-color: var(--x-brand-solid);
   color: #fff;
+  /* 3.8.0：主操作给一层柔光，让它从一屏次要按钮里浮出来，
+     不靠加大饱和度或渐变（Fluent 2：强调色克制使用）。 */
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--x-brand-solid) 34%, transparent);
 }
 .x-btn.primary:hover { background: var(--x-brand-active); border-color: var(--x-brand-active); }
 .x-btn.ghost { background: transparent; }
@@ -525,20 +576,28 @@
 }
 .x-btn.is-text:hover { color: var(--x-brand); background: var(--x-nav-hover); }
 
-/* 顶栏里的输入与按钮（深底） */
-.x-top .x-input {
-  background: var(--x-top-input-bg);
-  border-color: var(--x-top-line);
+/* 顶栏里的输入与按钮（深底）。
+   3.8.0：选择器特意带上 .x-top-search —— 优先级要高于下面通用的
+   .x-input / .x-select 规则，才能把三个控件收进同一个胶囊。 */
+.x-top .x-top-search .x-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: 0;
   color: var(--x-top-ink);
 }
-.x-top .x-input::placeholder { color: var(--x-top-muted); }
-.x-top .x-input:focus { background: var(--x-top-input-bg-focus); border-color: var(--x-brand); }
-.x-top .x-select {
-  background-color: var(--x-top-input-bg);
-  border-color: var(--x-top-line);
+.x-top .x-top-search .x-input::placeholder { color: var(--x-top-muted); }
+.x-top .x-top-search .x-input:focus { background: transparent; }
+.x-top .x-top-search .x-select {
+  flex: none;
+  width: 132px;
+  background-color: transparent;
+  border: 0;
+  border-right: 1px solid var(--x-hair);
   color: var(--x-top-ink);
+  padding-right: 20px;
 }
-.x-top .x-select:focus { background-color: var(--x-top-input-bg-focus); border-color: var(--x-brand); }
+.x-top .x-top-search .x-select:focus { background-color: transparent; }
 /* 顶栏图标按钮：固定宽度 —— 折叠开关的图标在 ☰ / « / » 之间变，
    宽度不定的话按钮会跟着跳，整条顶栏都在抖。 */
 .x-top .x-top-btn {
@@ -549,11 +608,18 @@
 }
 .x-top .x-btn {
   background: transparent;
-  border-color: var(--x-top-line);
+  border-color: var(--x-hair);
   color: var(--x-top-ink);
 }
 .x-top .x-btn:hover { background: rgba(255,255,255,.08); }
-.x-top .x-btn.primary { background: var(--x-brand-solid); border-color: var(--x-brand-solid); color: #fff; }
+.x-top .x-top-search .x-btn.primary {
+  flex: none;
+  margin-left: var(--x-s1);
+  border-radius: var(--x-r-xs);
+  background: var(--x-brand-solid);
+  border-color: var(--x-brand-solid);
+  color: #fff;
+}
 
 /* 键帽（命令面板与快捷键提示） */
 .x-kbd {
@@ -568,7 +634,7 @@
   line-height: 1;
   color: var(--x-muted);
   background: var(--x-chip-bg);
-  border: 1px solid var(--x-line);
+  border: 1px solid var(--x-hair);
   border-bottom-width: 2px;
   border-radius: var(--x-r-xs);
 }
@@ -584,7 +650,7 @@
   font-weight: var(--x-fw-bold);
   padding: 1px 6px;
   border-radius: var(--x-r-xs);
-  border: 1px solid var(--x-line);
+  border: 1px solid var(--x-hair);
   background: var(--x-chip-bg);
   color: var(--x-muted);
   white-space: nowrap;
@@ -623,8 +689,8 @@
 .x-tabs {
   display: flex;
   gap: 2px;
-  border-bottom: 1px solid var(--x-line);
-  margin-bottom: var(--x-s3);
+  border-bottom: 1px solid var(--x-hair);
+  margin-bottom: var(--x-s4);
   overflow-x: auto;
 }
 .x-tab {
@@ -688,7 +754,7 @@
   align-items: flex-start;
   gap: var(--x-s3);
   padding: var(--x-s3);
-  border: 1px solid var(--x-line);
+  border: 1px solid var(--x-hair);
   border-left-width: 3px;
   border-left-color: var(--x-brand);
   border-radius: var(--x-r-sm);
@@ -738,7 +804,7 @@
   line-height: var(--x-lh-body);
 }
 .x-empty .e-ico {
-  width: 32px; height: 32px;
+  width: 40px; height: 40px;
   margin: 0 auto var(--x-s3);
   display: block;
   stroke: currentColor;
@@ -797,7 +863,7 @@
   display: flex;
   flex-direction: column;
   background: var(--x-surface-overlay);
-  border: 1px solid var(--x-line-strong);
+  border: 1px solid var(--x-hair);
   border-radius: var(--x-r-md);
   box-shadow: var(--x-shadow-overlay);
   overflow: hidden;
@@ -912,7 +978,7 @@
   display: flex;
   flex-direction: column;
   background: var(--x-surface-overlay);
-  border-left: 1px solid var(--x-line-strong);
+  border-left: 1px solid var(--x-hair);
   box-shadow: var(--x-shadow-overlay);
 }
 .x-drawer-hd {
@@ -971,7 +1037,7 @@
   max-width: 380px;
   padding: var(--x-s2) var(--x-s3);
   background: var(--x-surface-overlay);
-  border: 1px solid var(--x-line-strong);
+  border: 1px solid var(--x-hair);
   border-left-width: 3px;
   border-left-color: var(--x-brand);
   border-radius: var(--x-r-sm);
@@ -1118,7 +1184,7 @@
 
 /* 提交流水：等宽字体对齐哈希，日期与说明分列 */
 .x-log {
-  border: 1px solid var(--x-line);
+  border: 1px solid var(--x-hair);
   border-radius: var(--x-r-md);
   overflow: hidden;
   font-size: 12px;
@@ -1150,22 +1216,24 @@
   display: flex;
   align-items: center;
   gap: var(--x-s3);
-  padding: var(--x-s2) var(--x-s3);
-  border: 1px solid var(--x-line);
+  padding: var(--x-s3) var(--x-s4);
+  border: 1px solid var(--x-hair);
   border-radius: var(--x-r-md);
-  margin-bottom: var(--x-s2);
+  box-shadow: var(--x-card-shadow);
+  margin-bottom: var(--x-s3);
   background: var(--x-card);
-  transition: border-color var(--x-dur-fast) var(--x-ease);
+  transition: box-shadow var(--x-dur-base) var(--x-ease);
 }
-.x-item:hover { border-color: var(--x-soft-border); }
+.x-item:hover { box-shadow: var(--x-elev); }
 .x-item .grow { flex: 1; min-width: 0; }
 
 /* 资料库磁贴：整块可点 */
 .x-tile {
   display: block;
-  border: 1px solid var(--x-line);
+  border: 1px solid var(--x-hair);
   border-radius: var(--x-r-md);
-  padding: var(--x-s3);
+  box-shadow: var(--x-card-shadow);
+  padding: var(--x-s4);
   background: var(--x-card);
   color: inherit;
   text-decoration: none;
@@ -1273,7 +1341,7 @@
 
 /* 单条入口 */
 .x-lib-item {
-  border: 1px solid var(--x-line);
+  border: 1px solid var(--x-hair);
   border-radius: var(--x-r-md);
   background: var(--x-kpi-bg);
   padding: var(--x-s2) 11px 10px;
@@ -1397,7 +1465,7 @@ html.nav-mini .x-nav a .nav-badge { display: none; }
     position: static;
     height: auto;
     border-right: 0;
-    border-bottom: 1px solid var(--x-line);
+    border-bottom: 1px solid var(--x-hair);
     display: flex;
     flex-direction: row;
     overflow-x: auto;
@@ -1407,8 +1475,8 @@ html.nav-mini .x-nav a .nav-badge { display: none; }
   .x-nav-title, .x-nav-foot { display: none; }
   .x-nav a { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
   .x-nav a.on { border-left: 0; border-bottom-color: var(--x-brand); }
-  .x-main { padding: var(--x-s3); }
-  .x-top-inner { padding: 0 var(--x-s3); }
+  .x-main { padding: var(--x-s4); }
+  .x-top-inner { padding: 0 var(--x-s4); }
   .x-top-search { flex: 1 1 auto; }
   /* 窄屏侧栏本就是横向条，再收起等于没导航 */
   html.nav-mini .x-app-body { grid-template-columns: minmax(0, 1fr); }

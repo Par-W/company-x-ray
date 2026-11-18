@@ -1,15 +1,23 @@
 /* ==========================================================================
- * api.js · 后端接口访问（3.0.1）
+ * api.js · 后端接口访问的「带超时 + 统一错误」封装（3.0.1）
  * --------------------------------------------------------------------------
- * 所有 fetch 集中在这里，好处：
- *   ① 离线快照的兜底逻辑只有一份，不会漏；
- *   ② 错误信息统一格式，视图不用各写一套 try/catch；
- *   ③ 换接口地址只改这一处。
+ * 🔴 真实的 fetch 出入口**不在这个文件**：core/env.js 重写了 window.fetch，
+ *    按 RUNTIME.mode 把 /api/* 转到本机后端 / AppWrite 函数执行 / 离线快照。
+ *    本文件里调用的 fetch 同样经过那层重写，三种模式自动生效。
+ *
+ * 这里只负责两件事：
+ *   ① 给请求加 AbortController 超时（本机 25s、云端 90s）；
+ *   ② 失败时把后端/云端说的**理由**带出来，而不是只剩一个 HTTP 状态码。
+ *
+ * ⚠ 业务层（actions.js / views/*.js）仍有直接调用 window.fetch 的轻量请求，
+ *   它们也走 env.js 的路由，但没有超时、错误也只有状态码（已知债务）。
+ *   新写接口请用 postJSON / getJSON，别再抄一份 postJSON —— 3.3.1 前
+ *   actions.js 抄过，云端 501 的那句人话正是在这条缝里丢掉的。
  * ========================================================================== */
 
-/* 默认档：本机接口正常都在 1 秒内。留 25 秒是为了**云端只读版**——
-   它走 AppWrite 函数（Lambda 式冷启动，实测首次调用 9~10 秒），
-   同一个 getJSON 既服务本机也服务云端，卡 15 秒会把冷启动误报成"后端未响应"。 */
+/* 默认档：本机接口正常都在 1 秒内。留 25 秒是为了云端冷启动
+   （AppWrite 函数实测首次调用 9~10 秒）。云端链路要显式传 TIMEOUT_CLOUD，
+   否则 25s 会把慢响应误报成「后端未响应」。 */
 const TIMEOUT = 25000;
 /* 云端版是 Lambda 式冷启动 + 真去巨潮/东财核验：实测冷启动 18 秒、冷启动后的
    首次联网查询 52 秒，热起来才好到几秒。用本机那套 15 秒去卡它，用户看到的
@@ -58,68 +66,3 @@ export async function getJSON(url, opts = {}) {
   if (!r.ok) throw await apiError(r);
   return r.json();
 }
-
-/** 判断后端在不在。探活必须绕代理（本机 HTTP_PROXY 是死端口）。 */
-export async function backendAlive(port) {
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 2500);
-    const r = await fetch(`http://127.0.0.1:${port}/api/v1/health`, { signal: ctrl.signal });
-    clearTimeout(t);
-    return r.ok;
-  } catch (e) {
-    return false;
-  }
-}
-
-/* ---------- 具体接口 ---------- */
-
-export const API = {
-  /** 统一查询：可信度 + 投资评分一次出。 */
-  unified(name, type) {
-    return postJSON('/api/v2/query', { name, type });
-  },
-
-  /** 六锚点可信度。 */
-  trust(name) {
-    return postJSON('/api/v1/trust', { name });
-  },
-
-  /** 投资评分。 */
-  invest(name, type) {
-    return postJSON('/api/v1/invest', { name, type });
-  },
-
-  /** 企业档案（公开线索 + 人员）。 */
-  profile(name) {
-    return postJSON('/api/v1/profile', { name });
-  },
-
-  /** AI 整理。 */
-  ai(name) {
-    return postJSON('/api/v1/ai', { name });
-  },
-
-  /** 告警列表。 */
-  alerts() {
-    return getJSON('/api/v1/alerts');
-  },
-
-  /** 插件检测状态。 */
-  guardStatus() {
-    return getJSON('/api/v1/guard/status');
-  },
-
-  /** 名单管理。 */
-  lists() {
-    return getJSON('/api/v1/lists');
-  },
-
-  /** 设置读取 / 保存。 */
-  settings() {
-    return getJSON('/api/v1/settings');
-  },
-  saveSettings(patch) {
-    return postJSON('/api/v1/settings', patch);
-  },
-};
